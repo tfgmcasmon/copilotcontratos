@@ -4,11 +4,41 @@ import { renderToString } from "katex"; // Convierte LaTeX a HTML
 import "./App.css";
 
 const App = () => {
+    const [currentScreen, setCurrentScreen] = useState("home"); // Pantalla actual (home o editor)
+    const [contractType, setContractType] = useState(""); // Tipo de contrato seleccionado
     const [inputText, setInputText] = useState(""); // Texto actual del input
     const [autocompleteText, setAutocompleteText] = useState(""); // Texto autocompletado
     const [formattedLatex, setFormattedLatex] = useState(""); // Texto formateado con LaTeX
-    const [replacements, setReplacements] = useState({}); // Datos originales para desanonimización
+    const [errorMessage, setErrorMessage] = useState(""); // Mensaje de error para el usuario
     const debounceTimer = useRef(null); // Temporizador de debounce
+
+    /**
+     * Obtiene el contexto inicial específico para el tipo de contrato seleccionado.
+     * @param {string} type - Tipo de contrato.
+     */
+    const fetchContractTitle = async (type) => {
+        try {
+            const response = await fetch("http://127.0.0.1:8080/generateContractContext", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contract_type: type }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const title = data.prompt.split("\n")[0]; // Solo toma el título
+                setInputText(title || ""); // Muestra solo el título en el textarea
+                setContractType(type); // Guarda el tipo de contrato seleccionado
+                setCurrentScreen("editor"); // Cambia a la pantalla del editor
+                setErrorMessage(""); // Limpia cualquier mensaje de error previo
+            } else {
+                setErrorMessage("Error al obtener el título del contrato.");
+            }
+        } catch (error) {
+            console.error("Error al conectar con el backend:", error);
+            setErrorMessage("No se pudo conectar al servidor. Por favor, intente de nuevo.");
+        }
+    };
 
     /**
      * Realiza una solicitud al backend para obtener el autocompletado.
@@ -19,14 +49,12 @@ const App = () => {
             const response = await fetch("http://127.0.0.1:8080/trackChanges", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ changes: text }),
+                body: JSON.stringify({ changes: text, contract_type: contractType }),
             });
 
             if (response.ok) {
                 const data = await response.json();
-                const restoredAutocomplete = restoreText(data.autocomplete, data.replacements);
-                setAutocompleteText(restoredAutocomplete); // Guarda el texto autocompletado
-                setReplacements(data.replacements); // Guarda los datos anonimizados
+                setAutocompleteText(data.autocomplete || ""); // Guarda el texto autocompletado
             } else {
                 console.error("Error en la solicitud al backend:", response.statusText);
             }
@@ -34,93 +62,6 @@ const App = () => {
             console.error("Error al conectar con el backend:", error);
         }
     };
-
-    /**
-     * Realiza una solicitud al backend para convertir el texto a LaTeX.
-     * @param {string} text - Texto del usuario.
-     */
-    const fetchFormattedLatex = async (text) => {
-        try {
-            const response = await fetch("http://127.0.0.1:8080/formatToLatex", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ text }),
-            });
-    
-            if (response.ok) {
-                const data = await response.json();
-                const renderedLatex = renderLatex(data.latex); // Renderiza el texto LaTeX como HTML
-                setFormattedLatex(renderedLatex); // Guarda el texto formateado
-            } else {
-                console.error("Error en la solicitud al backend:", response.statusText);
-            }
-        } catch (error) {
-            console.error("Error al conectar con el backend:", error);
-        }
-    };
-    
-    
-    /**
-     * Restaura los datos originales a partir de un texto anonimizado.
-     * @param {string} text - Texto anonimizado.
-     * @param {object} replacementsMap - Mapa de marcadores a datos originales.
-     * @returns {string} - Texto restaurado con los datos originales.
-     */
-    const restoreText = (text, replacementsMap) => {
-        let restoredText = text;
-
-        Object.keys(replacementsMap).forEach((key) => {
-            restoredText = restoredText.replace(new RegExp(key, "g"), replacementsMap[key]);
-        });
-
-        return restoredText;
-    };
-
-    /**
-     * Renderiza texto LaTeX como HTML.
-     * @param {string} latexText - Texto en formato LaTeX.
-     * @returns {string} - HTML renderizado.
-     */
-    const replaceAccentsWithLatex = (text) => {
-        return text
-            .replace(/á/g, "\\'a")
-            .replace(/é/g, "\\'e")
-            .replace(/í/g, "\\'i")
-            .replace(/ó/g, "\\'o")
-            .replace(/ú/g, "\\'u")
-            .replace(/Á/g, "\\'A")
-            .replace(/É/g, "\\'E")
-            .replace(/Í/g, "\\'I")
-            .replace(/Ó/g, "\\'O")
-            .replace(/Ú/g, "\\'U")
-            .replace(/ñ/g, "\\~n")
-            .replace(/Ñ/g, "\\~N");
-    };
-    const cleanLatex = (latexText) => {
-        // Extraer solo el contenido entre \begin{document} y \end{document}
-        const start = latexText.indexOf("\\begin{document}");
-        const end = latexText.indexOf("\\end{document}") + "\\end{document}".length;
-        if (start !== -1 && end !== -1) {
-            return latexText.substring(start, end);
-        }
-        return latexText; // Devuelve el texto completo si no se encuentran delimitadores
-    };
-    
-    const renderLatex = (latexText) => {
-        try {
-            // Convierte el texto LaTeX en HTML usando KaTeX
-            return renderToString(latexText, {
-                throwOnError: false,
-                displayMode: true, // Modo de visualización para documentos
-                strict: "ignore", // Ignorar errores estrictos
-            });
-        } catch (error) {
-            console.error("Error al renderizar LaTeX:", error);
-            return latexText; // Devuelve el texto sin formato en caso de error
-        }
-    };
-    
-    
 
     /**
      * Maneja cambios en el textarea.
@@ -135,9 +76,8 @@ const App = () => {
         debounceTimer.current = setTimeout(() => {
             if (text.length >= 10) {
                 fetchAutocomplete(text); // Realiza la solicitud de autocompletado
-                fetchFormattedLatex(text); // Realiza la solicitud de formato LaTeX
             }
-        }, 2000);
+        }, 1000);
     };
 
     /**
@@ -147,11 +87,40 @@ const App = () => {
     const handleKeyDown = (e) => {
         if (e.key === "Tab" && autocompleteText) {
             e.preventDefault();
-            setInputText((prevText) => `${prevText} ${autocompleteText}`); // Añade el autocompletado
+            const sanitizedText = autocompleteText.trim();
+    
+            // Ignorar autocompletados que sean solo números o irrelevantes
+            if (!sanitizedText || !/[a-zA-Z]/.test(sanitizedText)) {
+                setAutocompleteText(""); // Limpia el autocompletado si es irrelevante
+                return;
+            }
+    
+            // Insertar la sugerencia como una nueva línea
+            setInputText((prevText) => `${prevText}\n${sanitizedText}`);
             setAutocompleteText(""); // Limpia el texto autocompletado
         }
     };
+    
+    // Pantalla inicial
+    if (currentScreen === "home") {
+        return (
+            <div className="app-container">
+                <header className="header">
+                    <img src="./logo.jpg" alt="Themis Logo" className="logo" />
+                    <h1 className="title">Themis</h1>
+                </header>
+                <div className="contract-selection">
+                    <h2>Selecciona el tipo de contrato:</h2>
+                    <button onClick={() => fetchContractTitle("arras")} className="contract-button">Contrato de Arras</button>
+                    <button onClick={() => fetchContractTitle("compraventa")} className="contract-button">Contrato de Compraventa</button>
+                    <button onClick={() => fetchContractTitle("arrendamiento")} className="contract-button">Contrato de Arrendamiento</button>
+                    {errorMessage && <p className="error-message">{errorMessage}</p>}
+                </div>
+            </div>
+        );
+    }
 
+    // Pantalla del editor
     return (
         <div className="app-container">
             <header className="header">
@@ -160,7 +129,7 @@ const App = () => {
             </header>
             <div className="main-content">
                 <textarea
-                    rows="4"
+                    rows="6"
                     value={inputText}
                     onChange={handleInputChange}
                     onKeyDown={handleKeyDown}
@@ -170,10 +139,6 @@ const App = () => {
                 <div className="autocomplete-output">
                     <h2>Texto Autocompletado:</h2>
                     <p>{autocompleteText}</p>
-                </div>
-                <div className="formatted-output">
-                    <h2>Texto Formateado en LaTeX:</h2>
-                    <div dangerouslySetInnerHTML={{ __html: formattedLatex }} />
                 </div>
             </div>
         </div>
