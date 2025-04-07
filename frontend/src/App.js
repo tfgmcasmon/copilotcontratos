@@ -2,6 +2,8 @@ import React, { useState, useRef } from "react";
 import "katex/dist/katex.min.css"; // Importa KaTeX para renderizar LaTeX
 import { renderToString } from "katex"; // Convierte LaTeX a HTML
 import "./App.css";
+import jsPDF from "jspdf";
+
 
 const App = () => {
     const [currentScreen, setCurrentScreen] = useState("home"); // Pantalla actual (home o editor)
@@ -11,6 +13,10 @@ const App = () => {
     const [formattedLatex, setFormattedLatex] = useState(""); // Texto formateado con LaTeX
     const [errorMessage, setErrorMessage] = useState(""); // Mensaje de error para el usuario
     const debounceTimer = useRef(null); // Temporizador de debounce
+    const [verificationResult, setVerificationResult] = useState(null);
+    const [verifying, setVerifying] = useState(false);
+    const [issues, setIssues] = useState([]);
+
 
     /**
      * Obtiene el contexto inicial específico para el tipo de contrato seleccionado.
@@ -40,6 +46,94 @@ const App = () => {
         }
     };
 
+    const verifyContractData = async () => {
+        setVerifying(true);
+        setVerificationResult(null);
+    
+        try {
+            const response = await fetch("http://127.0.0.1:8080/verifyContractData", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contract_text: inputText }),
+            });
+    
+            const data = await response.json();
+    
+            if (response.ok) {
+                if (Array.isArray(data.issues) && data.issues.length > 0) {
+                    setVerificationResult({ status: "warning", issues: data.issues });
+                } else if (data.message) {
+                    setVerificationResult({ status: "ok", message: data.message });
+                } else {
+                    setVerificationResult({ status: "ok", message: "✅ Todo parece correcto." });
+                }
+            } else {
+                setVerificationResult({ status: "error", message: data.error || "❌ Error al verificar los datos." });
+            }
+        } catch (err) {
+            console.error("❌ Error al conectar con el backend:", err);
+            setVerificationResult({ status: "error", message: "❌ No se pudo conectar al servidor." });
+        } finally {
+            setVerifying(false);
+        }
+    };
+    
+    const applyHighlights = (text, issues) => {
+        let highlighted = "";
+        let lastIndex = 0;
+      
+        issues.sort((a, b) => a.start - b.start).forEach(issue => {
+          highlighted += text.slice(lastIndex, issue.start);
+          highlighted += `<span class="error" title="${issue.message}">${text.slice(issue.start, issue.end)}</span>`;
+          lastIndex = issue.end;
+        });
+      
+        highlighted += text.slice(lastIndex);
+        return highlighted;
+      };
+      
+
+      const handleVerifyContract = async () => {
+        console.log("✅ Botón de verificación presionado");
+        try {
+            await verifyContractData(); // Usamos tu función escalable
+        } catch (error) {
+            console.error("❌ Error al verificar datos:", error);
+        }
+    };
+    
+    const getHighlightedText = () => {
+        if (!issues.length) return inputText;
+
+        let highlighted = "";
+        let lastIndex = 0;
+
+        // Ordenamos los errores por posición
+        const sorted = [...issues].sort((a, b) => a.start - b.start);
+
+        sorted.forEach(issue => {
+            highlighted += inputText.slice(lastIndex, issue.start);
+            highlighted += `<span class="error" title="${issue.message}">${inputText.slice(issue.start, issue.end)}</span>`;
+            lastIndex = issue.end;
+        });
+
+        highlighted += inputText.slice(lastIndex);
+        return highlighted;
+    };
+
+
+    const handleSaveContract = () => {
+        if (!inputText.trim()) {
+            alert("El contrato está vacío.");
+            return;
+        }
+    
+        const doc = new jsPDF();
+        const lines = doc.splitTextToSize(inputText, 180); // ajusta a ancho de página
+        doc.text(lines, 15, 20);
+        doc.save("contrato.pdf");
+    };
+    
     /**
      * Realiza una solicitud al backend para obtener el autocompletado.
      * @param {string} text - Texto del usuario.
@@ -140,6 +234,35 @@ const App = () => {
                     <h2>Texto Autocompletado:</h2>
                     <p>{autocompleteText}</p>
                 </div>
+                <button onClick={handleSaveContract} className="save-button">
+                    Guardar Contrato
+                </button>
+                <button onClick={handleVerifyContract} className="verify-button">
+                    {verifying ? "Verificando..." : "Verificar Datos"}
+                </button>
+                {verificationResult && (
+                    <div className={`verification-message ${verificationResult.status}`}>
+                        {verificationResult.status === "ok" && (
+                            <p>{verificationResult.message}</p>
+                        )}
+
+                        {verificationResult.status === "warning" && (
+                            <div>
+                                <p>⚠️ Se detectaron los siguientes posibles errores:</p>
+                                <ul>
+                                    {verificationResult.issues.map((issue, i) => (
+                                        <li key={i}>{issue}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
+                        {verificationResult.status === "error" && (
+                            <p>❌ {verificationResult.message}</p>
+                        )}
+                    </div>
+                )}
+
             </div>
         </div>
     );

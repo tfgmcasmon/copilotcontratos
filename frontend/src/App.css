@@ -166,3 +166,60 @@ body {
 button {
   cursor: pointer;
 }
+
+.save-button {
+  margin-top: 10px;
+  padding: 8px 16px;
+  font-size: 14px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.save-button:hover {
+  background-color: #0056b3;
+}
+
+.textarea-wrapper {
+  position: relative;
+  width: 100%;
+  height: auto;
+}
+
+.highlighted-text {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  color: transparent;
+  background: transparent;
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.input-box {
+  position: relative;
+  background: transparent;
+  color: black;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  resize: none;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+span.error {
+  background-color: rgba(255, 0, 0, 0.3);
+  color: red;
+  font-weight: bold;
+}
+

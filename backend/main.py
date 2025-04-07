@@ -5,6 +5,8 @@ from openai import OpenAI, OpenAIError
 from flask import Flask, request, jsonify
 import re
 from collections import deque
+from difflib import SequenceMatcher
+from collections import defaultdict
 
 # Guardamos el título inicial para evitar repetirlo en el primer tab
 last_generated_title = ""
@@ -18,6 +20,7 @@ with open('secrets.json', 'r') as file:
 
 app = Flask(__name__)
 CORS(app)
+nlp = spacy.load("es_core_news_md")
 
 # Configuración del cliente OpenAI
 client = OpenAI(
@@ -25,10 +28,45 @@ client = OpenAI(
     api_key=SECRETS["openai_api_key"],
 )
 
-# Carga el modelo de spaCy en español
-nlp = spacy.load("es_core_news_md")
+
+def nombres_similares(nombre1, nombre2, umbral=0.8):
+    return SequenceMatcher(None, nombre1.lower(), nombre2.lower()).ratio() >= umbral
+
+def extraer_y_validar_dnis(texto):
+    """
+    Extrae todos los DNIs del texto y devuelve cuáles son inválidos.
+    """
+    posibles_dnis = re.findall(r'\b\d{8}[A-Z]\b', texto.upper())
+    dnis_invalidos = []
+
+    for dni in posibles_dnis:
+        if not validar_dni_espanol(dni):
+            dnis_invalidos.append(dni)
+
+    return dnis_invalidos
 
 
+def validar_dni_espanol(dni):
+    """
+    Verifica si un DNI español es válido (formato y letra).
+    """
+    dni = dni.strip().upper()
+    if not re.match(r'^\d{8}[A-Z]$', dni):
+        return False
+
+    letras = "TRWAGMYFPDXBNJZSQVHLCKE"
+    numero = int(dni[:-1])
+    letra_correcta = letras[numero % 23]
+
+    return dni[-1] == letra_correcta
+
+def normalizar_nombre(nombre):
+    """
+    Convierte el nombre a minúsculas y elimina caracteres no alfabéticos (excepto espacios).
+    """
+    nombre = nombre.lower().strip()
+    return re.sub(r'[^a-záéíóúñ\s]', '', nombre)
+    
 def clean_and_cut_autocomplete(text, existing_text, is_first_completion):
     """
     Limpia el autocompletado eliminando placeholders, corta el texto donde el usuario debe introducir datos,
@@ -285,7 +323,99 @@ def track_changes():
     except Exception as e:
         print(f"Error inesperado: {e}")
         return jsonify({"error": "Error interno del servidor", "error_detail": str(e)}), 500
+    
+@app.route('/verifyContractData', methods=['POST'])
+def verify_contract_data():
+    try:
+        data = request.json
+        contract_text = data.get("contract_text", "").strip()
 
+        if not contract_text:
+            return jsonify({"error": "No se recibió texto del contrato"}), 400
+
+        doc = nlp(contract_text)
+        issues = []
+
+        person_data = {}  # persona -> datos
+        global_dnis = {}
+        global_telefonos = defaultdict(set)
+
+        for sent in doc.sents:
+            sentence = sent.text
+            sent_doc = nlp(sentence)
+
+            # Buscar nombres de persona
+            nombres = [ent.text.strip() for ent in sent_doc.ents if ent.label_ == "PER"]
+            if not nombres:
+                continue
+
+            # Asignar todos los datos de esta frase a estos nombres
+            posibles_dnis = re.findall(r'\b\d{7,8}[A-Za-z]\b', sentence)
+            telefonos = re.findall(r'\b6\d{8}\b|\b7\d{8}\b', sentence)
+            direccion = re.search(r'\b(calle|av(enida)?|plaza|camino|paseo)\s+[^\.,\n]+', sentence, re.IGNORECASE)
+
+            for nombre in nombres:
+                nombre_key = nombre.lower()
+                if nombre_key not in person_data:
+                    person_data[nombre_key] = {
+                        "nombre_original": nombre,
+                        "dnis": set(),
+                        "telefonos": set(),
+                        "direcciones": set()
+                    }
+
+                for dni in posibles_dnis:
+                    person_data[nombre_key]["dnis"].add(dni.upper())
+
+                for tel in telefonos:
+                    person_data[nombre_key]["telefonos"].add(tel)
+                    global_telefonos[tel].add(nombre_key)
+
+                if direccion:
+                    person_data[nombre_key]["direcciones"].add(direccion.group().strip())
+
+        # Detectar errores
+        for persona, datos in person_data.items():
+            nombre_mostrado = datos["nombre_original"]
+
+            # Formato de nombre sospechoso
+            if not re.match(r"^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)+$", nombre_mostrado):
+                issues.append(f"⚠️ Formato de nombre inusual: '{nombre_mostrado}'")
+
+            # Múltiples DNIs para una persona
+            if len(datos["dnis"]) > 1:
+                issues.append(f"❌ '{nombre_mostrado}' tiene múltiples DNIs: {', '.join(datos['dnis'])}")
+
+            for dni in datos["dnis"]:
+                if not validar_dni_espanol(dni):
+                    issues.append(f"⚠️ DNI potencialmente incorrecto para '{nombre_mostrado}': {dni}")
+
+                if dni in global_dnis and global_dnis[dni] != persona:
+                    otra = person_data[global_dnis[dni]]["nombre_original"]
+                    issues.append(f"❌ DNI '{dni}' está asociado a múltiples personas: '{nombre_mostrado}' y '{otra}'")
+                else:
+                    global_dnis[dni] = persona
+
+            # Guardar teléfonos ya advertidos para evitar duplicados
+            telefonos_reportados = set()
+
+            telefonos_reportados = set()
+
+            for tel in datos["telefonos"]:
+                if len(global_telefonos[tel]) > 1 and tel not in telefonos_reportados:
+                    personas_con_tel = [person_data[p]["nombre_original"] for p in global_telefonos[tel]]
+                    mensaje = f"❌ El teléfono '{tel}' está siendo usado por múltiples personas: {', '.join(personas_con_tel)}."
+                    if mensaje not in issues:
+                        issues.append(mensaje)
+                    telefonos_reportados.add(tel)
+
+
+
+        return jsonify({"issues": issues}), 200
+
+    except Exception as e:
+        print(f"Error en verificación: {e}")
+        return jsonify({"error": "Error interno al verificar los datos", "detail": str(e)}), 500
 
 if __name__ == "__main__":
     print("Servidor Flask corriendo en http://127.0.0.1:8080")
