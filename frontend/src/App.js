@@ -16,6 +16,8 @@ const App = () => {
     const [verificationResult, setVerificationResult] = useState(null);
     const [verifying, setVerifying] = useState(false);
     const [issues, setIssues] = useState([]);
+    const [highlightedText, setHighlightedText] = useState("");
+
 
 
     /**
@@ -77,6 +79,42 @@ const App = () => {
             setVerifying(false);
         }
     };
+
+    const generateHighlightedText = (text, issues) => {
+        let result = "";
+        let lastIndex = 0;
+    
+        if (!Array.isArray(issues)) return text;
+    
+        // Detecta patrones para highlight si no hay posiciones (fallback)
+        const regexIssues = issues.map((msg) => {
+            const match = msg.match(/'([^']+)'/);
+            return match ? match[1] : null;
+        }).filter(Boolean);
+    
+        const segments = [];
+    
+        regexIssues.forEach((fragment) => {
+            let index = text.toLowerCase().indexOf(fragment.toLowerCase());
+            if (index !== -1 && !segments.some(seg => seg.start === index)) {
+                segments.push({
+                    start: index,
+                    end: index + fragment.length,
+                    message: fragment,
+                });
+            }
+        });
+    
+        segments.sort((a, b) => a.start - b.start).forEach((seg) => {
+            result += text.slice(lastIndex, seg.start);
+            result += `<span class="highlight" title="${seg.message}">${text.slice(seg.start, seg.end)}</span>`;
+            lastIndex = seg.end;
+        });
+    
+        result += text.slice(lastIndex);
+        return result;
+    };
+    
     
     const applyHighlights = (text, issues) => {
         let highlighted = "";
@@ -97,6 +135,11 @@ const App = () => {
         console.log("✅ Botón de verificación presionado");
         try {
             await verifyContractData(); // Usamos tu función escalable
+            if (verificationResult?.issues?.length) {
+                const html = generateHighlightedText(inputText, verificationResult.issues);
+                setHighlightedText(html);
+            }
+
         } catch (error) {
             console.error("❌ Error al verificar datos:", error);
         }
@@ -230,6 +273,13 @@ const App = () => {
                     placeholder="Escribe algo para obtener sugerencias..."
                     className="input-box"
                 ></textarea>
+                {highlightedText && (
+                    <div className="highlighted-output">
+                        <h3>Texto con Errores Marcados:</h3>
+                        <div dangerouslySetInnerHTML={{ __html: highlightedText }} />
+                    </div>
+                )}
+
                 <div className="autocomplete-output">
                     <h2>Texto Autocompletado:</h2>
                     <p>{autocompleteText}</p>
