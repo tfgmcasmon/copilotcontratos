@@ -10,7 +10,7 @@ from collections import defaultdict
 from sentence_transformers import SentenceTransformer
 import faiss
 import os
-
+from buscar_fragmentos import get_fragmentos_legales
 
 # Cargar modelo y FAISS solo una vez
 embedding_model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
@@ -451,44 +451,67 @@ def verify_contract_data():
 
 @app.route('/legalChat', methods=['POST'])
 def legal_chat():
-    """
-    Chat legal inteligente que responde con base en legislación española.
-    """
     try:
         data = request.get_json()
         messages = data.get("messages", [])
-
         if not messages:
             return jsonify({"error": "No se recibió historial de mensajes."}), 400
 
-        ultima_pregunta = messages[-1]["content"]
-        contexto_legal = buscar_fragmentos_contexto(ultima_pregunta)
+        pregunta_usuario = messages[-1]["content"]
 
-        system_prompt = (
-            "Eres un asistente legal especializado en derecho español. "
-            "Tienes acceso a fragmentos de leyes oficiales. Usa solo la información dada. "
-            "Responde con claridad y cita los artículos si es posible. Si no sabes algo, dilo.\n\n"
-            f"### CONTEXTO LEGAL DISPONIBLE:\n{contexto_legal}\n\n"
-            "### FIN DEL CONTEXTO.\n"
-            "Responde de forma clara, legal y sin inventar contenido que no esté arriba."
+        # Recuperar fragmentos legales completos
+        fragmentos = get_fragmentos_legales(pregunta_usuario)
+    
+
+        # Construir contexto legal con formato
+        contexto = "\n\n".join([
+            f"📘 **Ley:** {f['ley_id'].replace('_', ' ').title()}\n📝 **Artículo {f['articulo']}**\n{f['texto']}"
+            for f in fragmentos
+        ])
+
+        # Prompt con contexto legal
+        prompt = (
+            f"Teniendo en cuenta los siguientes artículos relevantes:\n\n{contexto}\n\n"
+            f"Responde a la pregunta legal en español claro, sin inventar información. "
+            f"Usa formato visual (negritas, listas) si es útil. La pregunta es:\n\n"
+            f"{pregunta_usuario}"
         )
 
-        chat_messages = [{"role": "system", "content": system_prompt}] + messages
-
+        # Llamada a Mistral vía OpenRouter
         response = client.chat.completions.create(
             model="mistralai/mistral-7b-instruct:free",
-            messages=chat_messages,
+            messages=[{"role": "user", "content": prompt}],
             temperature=0.4,
-            max_tokens=1000
+            max_tokens=700
         )
 
         answer = response.choices[0].message.content.strip()
-        return jsonify({"response": format_response(answer)}), 200
+
+        # Generar las citas legales completas al final
+        referencias = []
+        for frag in fragmentos:
+            ley_legible = frag["ley_id"].replace("_", " ").replace("c digo", "Código").title()
+            articulo = frag["articulo"]
+            texto = frag["texto"].strip()
+
+            # Cortar si es muy largo
+            if len(texto.split()) > 150:
+                texto = " ".join(texto.split()[:150]) + "..."
+
+            referencia = f"**{ley_legible}, artículo {articulo}.** {texto}"
+            referencias.append(referencia)
+
+        # Añadir al final de la respuesta
+        if referencias:
+            answer += "\n\n---\n\n**📚 Leyes citadas:**\n\n" + "\n\n".join(referencias)
+
+        return jsonify({"response": answer}), 200
+
 
     except Exception as e:
         print(f"❌ Error en /legalChat: {e}")
         return jsonify({"error": "Error interno al procesar la consulta legal."}), 500
-
+        
 if __name__ == "__main__":
     print("Servidor Flask corriendo en http://127.0.0.1:8080")
     app.run(host="127.0.0.1", port=8080, debug=True)
