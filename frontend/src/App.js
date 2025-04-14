@@ -3,7 +3,7 @@ import "katex/dist/katex.min.css"; // Importa KaTeX para renderizar LaTeX
 import { renderToString } from "katex"; // Convierte LaTeX a HTML
 import "./App.css";
 import jsPDF from "jspdf";
-
+import LegalChat from "./pages/LegalChat";
 
 const App = () => {
     const [currentScreen, setCurrentScreen] = useState("home"); // Pantalla actual (home o editor)
@@ -248,74 +248,86 @@ const App = () => {
                 </header>
                 <div className="contract-selection">
                     <h2>Selecciona el tipo de contrato:</h2>
-                    <button onClick={() => fetchContractTitle("arras")} className="contract-button">Contrato de Arras</button>
-                    <button onClick={() => fetchContractTitle("compraventa")} className="contract-button">Contrato de Compraventa</button>
-                    <button onClick={() => fetchContractTitle("arrendamiento")} className="contract-button">Contrato de Arrendamiento</button>
+                    <button onClick={() => fetchContractTitle("arras")&&setCurrentScreen("editor")} className="contract-button">Contrato de Arras</button>
+                    <button onClick={() => fetchContractTitle("compraventa")&&setCurrentScreen("editor")} className="contract-button">Contrato de Compraventa</button>
+                    <button onClick={() => fetchContractTitle("arrendamiento")&&setCurrentScreen("editor")} className="contract-button">Contrato de Arrendamiento</button>
+                    <button onClick={() => setCurrentScreen("legalchat")} className="contract-button">
+                    📚 Asistente Legal
+                    </button>
                     {errorMessage && <p className="error-message">{errorMessage}</p>}
                 </div>
             </div>
         );
     }
+  
+    if (currentScreen === "editor") {
 
-    // Pantalla del editor
-    return (
-        <div className="app-container">
-            <header className="header">
-                <img src="./logo.jpg" alt="Themis Logo" className="logo" />
-                <h1 className="title">Themis</h1>
-            </header>
-            <div className="main-content">
-                <textarea
-                    rows="6"
-                    value={inputText}
-                    onChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Escribe algo para obtener sugerencias..."
-                    className="input-box"
-                ></textarea>
-                {highlightedText && (
-                    <div className="highlighted-output">
-                        <h3>Texto con Errores Marcados:</h3>
-                        <div dangerouslySetInnerHTML={{ __html: highlightedText }} />
+        // Pantalla del editor
+        return (
+            <div className="app-container">
+                <header className="header">
+                    <img src="./logo.jpg" alt="Themis Logo" className="logo" />
+                    <h1 className="title">Themis</h1>
+                </header>
+                <div className="main-content">
+                    <textarea
+                        rows="6"
+                        value={inputText}
+                        onChange={handleInputChange}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Escribe algo para obtener sugerencias..."
+                        className="input-box"
+                    ></textarea>
+                    {highlightedText && (
+                        <div className="highlighted-output">
+                            <h3>Texto con Errores Marcados:</h3>
+                            <div dangerouslySetInnerHTML={{ __html: highlightedText }} />
+                        </div>
+                    )}
+
+                    <div className="autocomplete-output">
+                        <h2>Texto Autocompletado:</h2>
+                        <p>{autocompleteText}</p>
                     </div>
-                )}
+                    <button onClick={handleSaveContract} className="save-button">
+                        Guardar Contrato
+                    </button>
+                    <button onClick={handleVerifyContract} className="verify-button">
+                        {verifying ? "Verificando..." : "Verificar Datos"}
+                    </button>
+                    {verificationResult && (
+                        <div className={`verification-message ${verificationResult.status}`}>
+                            {verificationResult.status === "ok" && (
+                                <p>{verificationResult.message}</p>
+                            )}
 
-                <div className="autocomplete-output">
-                    <h2>Texto Autocompletado:</h2>
-                    <p>{autocompleteText}</p>
+                            {verificationResult.status === "warning" && (
+                                <div>
+                                    <p>⚠️ Se detectaron los siguientes posibles errores:</p>
+                                    <ul>
+                                        {verificationResult.issues.map((issue, i) => (
+                                            <li key={i}>{issue}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {verificationResult.status === "error" && (
+                                <p>❌ {verificationResult.message}</p>
+                            )}
+                        </div>
+                    )}
+
                 </div>
-                <button onClick={handleSaveContract} className="save-button">
-                    Guardar Contrato
-                </button>
-                <button onClick={handleVerifyContract} className="verify-button">
-                    {verifying ? "Verificando..." : "Verificar Datos"}
-                </button>
-                {verificationResult && (
-                    <div className={`verification-message ${verificationResult.status}`}>
-                        {verificationResult.status === "ok" && (
-                            <p>{verificationResult.message}</p>
-                        )}
-
-                        {verificationResult.status === "warning" && (
-                            <div>
-                                <p>⚠️ Se detectaron los siguientes posibles errores:</p>
-                                <ul>
-                                    {verificationResult.issues.map((issue, i) => (
-                                        <li key={i}>{issue}</li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-
-                        {verificationResult.status === "error" && (
-                            <p>❌ {verificationResult.message}</p>
-                        )}
-                    </div>
-                )}
-
             </div>
-        </div>
-    );
-};
+        );
+    }
+
+    if (currentScreen === "legalchat") {
+
+        return <LegalChat onBack={() => setCurrentScreen("home")} />;
+
+    };
+}
 
 export default App;

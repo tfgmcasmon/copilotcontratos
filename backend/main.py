@@ -7,6 +7,38 @@ import re
 from collections import deque
 from difflib import SequenceMatcher
 from collections import defaultdict
+from sentence_transformers import SentenceTransformer
+import faiss
+import os
+
+
+# Cargar modelo y FAISS solo una vez
+embedding_model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+faiss_index = faiss.read_index("data/faiss_index.bin")
+
+
+# Carga de los metadatos de los fragmentos
+with open("data/fragmentos_metadata.json", "r", encoding="utf-8") as f:
+    fragmentos_metadata = json.load(f)
+
+def format_response(raw_text):
+    raw_text = raw_text.replace("Cita:", "<br><strong>Cita:</strong><ul>")
+    raw_text = re.sub(r"- (c_digo_[a-z]+), artículo (\d+):", r"<li><strong>\2:</strong> ", raw_text)
+    raw_text = raw_text.replace("...", "</li></ul>")
+    raw_text = raw_text.replace("c_digo_civil", "Código Civil").replace("c_digo_penal", "Código Penal")
+    return raw_text
+
+
+def buscar_fragmentos_contexto(pregunta, top_k=5):
+    vector = embedding_model.encode([pregunta])
+    _, indices = faiss_index.search(vector, top_k)
+
+    fragmentos = []
+    for i in indices[0]:
+        item = fragmentos_metadata[i]
+        fragmentos.append(f"- **{item['ley']}**, artículo {item['id']}:\n{item['texto']}")
+    return "\n\n".join(fragmentos)
+
 
 # Guardamos el título inicial para evitar repetirlo en el primer tab
 last_generated_title = ""
@@ -15,7 +47,7 @@ last_generated_title = ""
 history=deque(maxlen=20)
 
 # Configuración de la API Key
-with open('secrets.json', 'r') as file:
+with open(os.path.join(os.path.dirname(__file__), '..', 'secrets.json'), 'r', encoding='utf-8') as file:
     SECRETS = json.load(file)
 
 app = Flask(__name__)
@@ -416,6 +448,46 @@ def verify_contract_data():
     except Exception as e:
         print(f"Error en verificación: {e}")
         return jsonify({"error": "Error interno al verificar los datos", "detail": str(e)}), 500
+
+@app.route('/legalChat', methods=['POST'])
+def legal_chat():
+    """
+    Chat legal inteligente que responde con base en legislación española.
+    """
+    try:
+        data = request.get_json()
+        messages = data.get("messages", [])
+
+        if not messages:
+            return jsonify({"error": "No se recibió historial de mensajes."}), 400
+
+        ultima_pregunta = messages[-1]["content"]
+        contexto_legal = buscar_fragmentos_contexto(ultima_pregunta)
+
+        system_prompt = (
+            "Eres un asistente legal especializado en derecho español. "
+            "Tienes acceso a fragmentos de leyes oficiales. Usa solo la información dada. "
+            "Responde con claridad y cita los artículos si es posible. Si no sabes algo, dilo.\n\n"
+            f"### CONTEXTO LEGAL DISPONIBLE:\n{contexto_legal}\n\n"
+            "### FIN DEL CONTEXTO.\n"
+            "Responde de forma clara, legal y sin inventar contenido que no esté arriba."
+        )
+
+        chat_messages = [{"role": "system", "content": system_prompt}] + messages
+
+        response = client.chat.completions.create(
+            model="mistralai/mistral-7b-instruct:free",
+            messages=chat_messages,
+            temperature=0.4,
+            max_tokens=1000
+        )
+
+        answer = response.choices[0].message.content.strip()
+        return jsonify({"response": format_response(answer)}), 200
+
+    except Exception as e:
+        print(f"❌ Error en /legalChat: {e}")
+        return jsonify({"error": "Error interno al procesar la consulta legal."}), 500
 
 if __name__ == "__main__":
     print("Servidor Flask corriendo en http://127.0.0.1:8080")
