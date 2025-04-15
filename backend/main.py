@@ -11,6 +11,8 @@ from sentence_transformers import SentenceTransformer
 import faiss
 import os
 from buscar_fragmentos import get_fragmentos_legales
+from generar_query_mistral import generar_query_juridica_mistral
+
 
 # Cargar modelo y FAISS solo una vez
 embedding_model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
@@ -487,7 +489,7 @@ def legal_chat():
 
         answer = response.choices[0].message.content.strip()
 
-        # Generar las citas legales completas al final
+                # Generar las citas legales completas al final
         referencias = []
         for frag in fragmentos:
             ley_legible = frag["ley_id"].replace("_", " ").replace("c digo", "Código").title()
@@ -501,9 +503,13 @@ def legal_chat():
             referencia = f"**{ley_legible}, artículo {articulo}.** {texto}"
             referencias.append(referencia)
 
-        # Añadir al final de la respuesta
         if referencias:
-            answer += "\n\n---\n\n**📚 Leyes citadas:**\n\n" + "\n\n".join(referencias)
+            answer += "\n\n---\n\n📚 **Leyes citadas:**\n\n" + "\n\n".join(referencias)
+
+        # 🔍 Generar palabras clave con Mistral para búsqueda de jurisprudencia
+        keywords = generar_query_juridica_mistral(pregunta_usuario)
+        if keywords:
+            answer += f"\n\n---\n\n🔎 **Palabras clave para buscar jurisprudencia:**\n{keywords}"
 
         return jsonify({"response": answer}), 200
 
