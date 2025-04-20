@@ -3,7 +3,9 @@ import "katex/dist/katex.min.css"; // Importa KaTeX para renderizar LaTeX
 import { renderToString } from "katex"; // Convierte LaTeX a HTML
 import "./App.css";
 import jsPDF from "jspdf";
-import LegalChat from "./pages/LegalChat";
+import LegalChat  from "./pages/LegalChat";
+import TaskManager from "./pages/TaskManager";
+
 
 const App = () => {
     const [currentScreen, setCurrentScreen] = useState("home"); // Pantalla actual (home o editor)
@@ -254,12 +256,20 @@ const App = () => {
                     <button onClick={() => setCurrentScreen("legalchat")} className="contract-button">
                     📚 Asistente Legal
                     </button>
+                    <button onClick={() => setCurrentScreen("taskmanager")} className="contract-button">
+                    🧠 Gestor de Tareas Inteligente
+                    </button>
+
                     {errorMessage && <p className="error-message">{errorMessage}</p>}
                 </div>
             </div>
         );
     }
   
+    if (currentScreen === "taskmanager") {
+        return <TaskManager onBack={() => setCurrentScreen("home")} />;
+    }
+    
     if (currentScreen === "editor") {
 
         // Pantalla del editor

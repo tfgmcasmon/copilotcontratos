@@ -12,16 +12,24 @@ import faiss
 import os
 from buscar_fragmentos import get_fragmentos_legales
 from generar_query_mistral import generar_query_juridica_mistral
+from gestor_tareas.router import  gestor_tareas_bp
 
+# Definir rutas absolutas
+BASE_DIR = os.path.dirname(__file__)
+DATA_DIR = os.path.join(BASE_DIR, "data")
+INDEX_PATH = os.path.join(DATA_DIR, "faiss_index.bin")
+METADATA_PATH = os.path.join(DATA_DIR, "fragmentos_metadata.json")
 
-# Cargar modelo y FAISS solo una vez
+# Cargar modelo de embeddings
 embedding_model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
-faiss_index = faiss.read_index("data/faiss_index.bin")
 
+# Cargar índice FAISS
+faiss_index = faiss.read_index(INDEX_PATH)
 
-# Carga de los metadatos de los fragmentos
-with open("data/fragmentos_metadata.json", "r", encoding="utf-8") as f:
+# Cargar metadatos de fragmentos
+with open(METADATA_PATH, "r", encoding="utf-8") as f:
     fragmentos_metadata = json.load(f)
+
 
 def format_response(raw_text):
     raw_text = raw_text.replace("Cita:", "<br><strong>Cita:</strong><ul>")
@@ -53,7 +61,7 @@ with open(os.path.join(os.path.dirname(__file__), '..', 'secrets.json'), 'r', en
     SECRETS = json.load(file)
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
 nlp = spacy.load("es_core_news_md")
 
 # Configuración del cliente OpenAI
@@ -473,10 +481,10 @@ def legal_chat():
 
         # Prompt con contexto legal
         prompt = (
-            f"Teniendo en cuenta los siguientes artículos relevantes:\n\n{contexto}\n\n"
-            f"Responde a la pregunta legal en español claro, sin inventar información. "
-            f"Usa formato visual (negritas, listas) si es útil. La pregunta es:\n\n"
-            f"{pregunta_usuario}"
+            f"Teniendo en cuenta los siguientes artículos legales relevantes:\n\n{contexto}\n\n"
+            f"Responde a la siguiente consulta en español claro, con base legal, y si procede, estructura visual como listas o negritas. "
+            f"No inventes leyes ni jurisprudencia. Si la ley no contempla directamente el caso, explica las posibilidades.\n\n"
+            f"❓ Pregunta: {pregunta_usuario}"
         )
 
         # Llamada a Mistral vía OpenRouter
@@ -520,4 +528,5 @@ def legal_chat():
         
 if __name__ == "__main__":
     print("Servidor Flask corriendo en http://127.0.0.1:8080")
+    app.register_blueprint(gestor_tareas_bp, url_prefix="/gestor_tareas")
     app.run(host="127.0.0.1", port=8080, debug=True)
