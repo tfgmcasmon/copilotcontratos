@@ -29,6 +29,7 @@ const LegalChat = ({ onBack }) => {
   const typingIntervalRef = useRef(null);
   const [expertMode, setExpertMode] = useState(false);
   const [darkMode, setDarkMode]=useState(false);
+  const [chatHistory, setChatHistory]=useState([]);
 
   const stopResponse = () => {
     clearInterval(typingIntervalRef.current);
@@ -36,6 +37,13 @@ const LegalChat = ({ onBack }) => {
     setIsThinking(false);
     setLoading(false);
   };
+
+  const addToChatHistory=(userMessage, assistantResponse) =>{
+    setChatHistory((prevHistory)=>[
+        ...prevHistory,
+        {userMessage,assistantResponse, id: Date.now()},
+    ]);
+  }
 
   const toggleMode=()=>{
     setExpertMode(!expertMode);
@@ -171,6 +179,7 @@ const LegalChat = ({ onBack }) => {
 
     try {
       const response = await fetchLegalResponse(messagePayload);
+      addToChatHistory(trimmed,response);
 
       console.log("📥 Respuesta cruda recibida:", response);
 
@@ -215,6 +224,14 @@ const LegalChat = ({ onBack }) => {
     }
   };
 
+   // Función para cargar un chat del historial
+   const loadChatFromHistory = (chat) => {
+    setMessages([
+      { role: "user", text: chat.userMessage },
+      { role: "assistant", text: chat.assistantResponse },
+    ]);
+  };
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typingResponse]);
@@ -252,6 +269,18 @@ const LegalChat = ({ onBack }) => {
             Buscar Jurisprudencia
             </button>
         </div>
+        <div className="chat-container">
+        {/* Barra Lateral de Historial de Chats */}
+        <div className="chat-sidebar">
+          <h3>Historial de Chats</h3>
+          <ul>
+            {chatHistory.map((chat) => (
+              <li key={chat.id} onClick={() => loadChatFromHistory(chat)}>
+                <span>Consulta: {chat.userMessage.slice(0, 30)}...</span>
+              </li>
+            ))}
+          </ul>
+        </div>
 
         <div className="legal-chat-wrapper">
             <div className="legal-chat-box">
@@ -287,7 +316,7 @@ const LegalChat = ({ onBack }) => {
             ))}
 
             {typingResponse && <div className="chat-bubble assistant formatted-response">{formatLegalResponse(typingResponse)}</div>}
-            {!typingResponse && isThinking && <div className="chat-bubble assistant"><span>Escribiendo{thinkingDots}</span></div>}
+            {!typingResponse && isThinking && <div className="chat-bubble assistant"><span>Analizando{thinkingDots}</span></div>}
             <div ref={chatEndRef} />
             </div>
 
@@ -301,6 +330,7 @@ const LegalChat = ({ onBack }) => {
             />
             {loading ? <button onClick={stopResponse} className="stop-button">⏹</button> : <button onClick={handleSend}>Enviar</button>}
             </div>
+        </div>
         </div>
     </div>
 

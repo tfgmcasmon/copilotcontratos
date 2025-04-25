@@ -17,6 +17,7 @@ const Copilot = ({ onBack }) => {
   const [verifying, setVerifying] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const debounceTimer = useRef(null);
+  const [suggestion,setSuggestion]=useState("");
 
   useEffect(() => {
     fetchContractTitle(contractType, setInputText, setContractType, setErrorMessage);
@@ -25,6 +26,8 @@ const Copilot = ({ onBack }) => {
   const handleInputChange = (e) => {
     const text = e.target.value;
     setInputText(text);
+    console.log("Texto actual:", inputText);
+
 
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
 
@@ -38,15 +41,16 @@ const Copilot = ({ onBack }) => {
   const handleKeyDown = (e) => {
     if (e.key === "Tab" && autocompleteText) {
       e.preventDefault();
-      const suggestion = autocompleteText.trim();
-      if (!suggestion || !/[a-zA-Z]/.test(suggestion)) {
-        setAutocompleteText("");
-        return;
-      }
-      setInputText((prev) => `${prev}\n${suggestion}`);
-      setAutocompleteText("");
+      const cleanedText = autocompleteText
+        .replace(/\n+/g, " ")        // ⚠️ quita saltos de línea
+        .replace(/\s{2,}/g, " ")     // ⚠️ quita dobles espacios
+        .trim();
+  
+      setInputText((prev) => (prev + cleanedText));
+      setAutocompleteText(""); // limpia sugerencia después de usarla
     }
   };
+  
 
   const handleSaveContract = () => {
     if (!inputText.trim()) {

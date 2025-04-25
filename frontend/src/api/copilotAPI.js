@@ -32,7 +32,12 @@ export const fetchAutocomplete = async (text, type, setAutocompleteText) => {
 
     if (response.ok) {
       const data = await response.json();
-      setAutocompleteText(data.autocomplete || "");
+      setAutocompleteText(
+        (data.autocomplete || "")
+          .replace(/\n+/g, " ")        // limpia saltos de línea generados por el modelo
+          .replace(/\s{2,}/g, " ")     // limpia espacios dobles
+          .trim()
+      );      
     } else {
       console.error("Error al obtener sugerencia:", response.statusText);
     }
