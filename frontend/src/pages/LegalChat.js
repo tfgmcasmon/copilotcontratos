@@ -28,6 +28,7 @@ const LegalChat = ({ onBack }) => {
   const chatEndRef = useRef(null);
   const typingIntervalRef = useRef(null);
   const [expertMode, setExpertMode] = useState(false);
+  const [darkMode, setDarkMode]=useState(false);
 
   const stopResponse = () => {
     clearInterval(typingIntervalRef.current);
@@ -35,6 +36,11 @@ const LegalChat = ({ onBack }) => {
     setIsThinking(false);
     setLoading(false);
   };
+
+  const toggleMode=()=>{
+    setExpertMode(!expertMode);
+    setDarkMode(!darkMode);
+  }
 
   const handleCopy = (text, index) => {
     navigator.clipboard.writeText(text);
@@ -48,15 +54,20 @@ const LegalChat = ({ onBack }) => {
     const margin = 50;
     let y = 60;
 
+    // Cambiar fuente a Times New Roman
+    doc.setFont("times", "normal");
+
+    // Header con color y logo
     doc.setFillColor("#80002a");
     doc.rect(0, 0, pageWidth, 60, "F");
-    doc.setFont("helvetica", "bold");
+    doc.setFont("times", "bold");
     doc.setFontSize(16);
     doc.setTextColor("#ffffff");
     doc.text("Themis · Asistente Legal", margin, 38);
     y = 80;
 
-    doc.setFont("helvetica", "normal");
+    // Información adicional sobre la consulta
+    doc.setFont("times", "normal");
     doc.setFontSize(10);
     doc.setTextColor(50);
     doc.text(`Consulta: ${inputText}`, margin, y);
@@ -64,6 +75,7 @@ const LegalChat = ({ onBack }) => {
     doc.text(`Fecha de generación: ${new Date().toLocaleString()}`, margin, y);
     y += 30;
 
+    // Estilo para las respuestas
     doc.setFontSize(12);
     const lines = text.split(/\n+/);
     lines.forEach((line) => {
@@ -72,25 +84,31 @@ const LegalChat = ({ onBack }) => {
         y += 10;
         return;
       }
+
+      // Si el texto contiene "Respuesta", "Leyes citadas" o "Palabras clave", se pone en negrita
       if (cleanLine.toLowerCase().startsWith("respuesta:") || cleanLine.startsWith("Leyes citadas") || cleanLine.startsWith("Palabras clave")) {
-        doc.setFont("helvetica", "bold");
+        doc.setFont("times", "bold");
         doc.setFontSize(13);
         doc.setTextColor("#80002a");
       } else {
-        doc.setFont("helvetica", "normal");
+        doc.setFont("times", "normal");
         doc.setFontSize(12);
         doc.setTextColor(20);
       }
+
       const wrapped = doc.splitTextToSize(cleanLine.replace(/\*\*(.+?)\*\*/g, "$1"), pageWidth - 2 * margin);
       doc.text(wrapped, margin, y);
       y += wrapped.length * 16 + 6;
+
+      // Si se pasa de la página, añadir una nueva
       if (y > doc.internal.pageSize.getHeight() - 60) {
         doc.addPage();
         y = 60;
       }
     });
 
-    doc.setFont("helvetica", "italic");
+    // Pie de página con texto en cursiva
+    doc.setFont("times", "italic");
     doc.setFontSize(9);
     doc.setTextColor(100);
     doc.text(
@@ -100,6 +118,7 @@ const LegalChat = ({ onBack }) => {
       { maxWidth: pageWidth - 2 * margin }
     );
 
+    // Usar las palabras clave para generar el nombre del archivo
     const keywords = inputText
       .toLowerCase()
       .replace(/[^\w\s]/g, "")
@@ -108,10 +127,16 @@ const LegalChat = ({ onBack }) => {
       .slice(0, 4)
       .join("_") || "informe_themis";
 
+    // Generar y abrir el PDF en una nueva pestaña
     const blob = doc.output("blob");
     const blobUrl = URL.createObjectURL(blob);
-    window.open(blobUrl, "_blank");
-  };
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = `${keywords}.pdf`; // Asignar el nombre adecuado con palabras clave
+    link.target = "_blank"; // Abrir en nueva pestaña
+    link.click();
+};
+
 
   const handleSend = async () => {
     const trimmed = userInput.trim();
@@ -204,56 +229,81 @@ const LegalChat = ({ onBack }) => {
 
   return (
     <div className="legal-chat-layout">
-      <div className="chat-top-bar">
-        <BackButton onClick={onBack} />
-        <div className="chat-header">
-          <h2 className="chat-title">Asistente Legal</h2>
-          <p className="chat-subtitle">Realiza tus consultas legales y recibe respuestas fundamentadas en segundos.</p>
-        </div>
-        <div className="mode-switch">
-          <label>
-            <input type="checkbox" checked={expertMode} onChange={() => setExpertMode(!expertMode)} />
-            <span className="switch-label">{expertMode ? "Modo experto" : "Modo explicativo"}</span>
-          </label>
-        </div>
-        <button className="jurisprudencia-button" onClick={() => window.open("https://www.poderjudicial.es/search/indexAN.jsp", "_blank")}>Buscar Jurisprudencia</button>
-      </div>
-
-      <div className="legal-chat-wrapper">
-        <div className="legal-chat-box">
-          {messages.map((msg, i) => (
-            <div key={i} className={`chat-bubble ${msg.role}`}>
-              {msg.role === "assistant" ? (
-                <div className="formatted-response">
-                  {formatLegalResponse(msg.text)}
-                  <div className="bubble-controls">
-                    <button className="copy-button" onClick={() => handleCopy(msg.text, i)} onMouseEnter={() => setHoveredCopy(i)} onMouseLeave={() => setHoveredCopy(null)}>
-                      📄
-                    </button>
-                    <button className="download-button" onClick={() => handleDownloadPDF(msg.text, msg.prompt)} title="Descargar informe">
-                      ⬇️
-                    </button>
-                    {copiedIndex === i && <span className="tooltip copied">¡Copiado!</span>}
-                    {hoveredCopy === i && <span className="tooltip">Copiar</span>}
-                  </div>
-                </div>
-              ) : (
-                <span>{msg.text}</span>
-              )}
+        <div className="chat-top-bar">
+            <BackButton onClick={onBack} />
+            <div className="chat-header">
+            <h2 className="chat-title">Asistente Legal</h2>
+            <p className="chat-subtitle">Realiza tus consultas legales y recibe respuestas fundamentadas en segundos.</p>
             </div>
-          ))}
-
-          {typingResponse && <div className="chat-bubble assistant formatted-response">{formatLegalResponse(typingResponse)}</div>}
-          {!typingResponse && isThinking && <div className="chat-bubble assistant"><span>Escribiendo{thinkingDots}</span></div>}
-          <div ref={chatEndRef} />
+            <div className="mode-switch">
+            <label>
+                <input 
+                type="checkbox" 
+                checked={expertMode} 
+                onChange={() => setExpertMode(!expertMode)} 
+                />
+                <span className="switch-label">{expertMode ? "Modo experto" : "Modo explicativo"}</span>
+            </label>
+            </div>
+            <button 
+            className="jurisprudencia-button" 
+            onClick={() => window.open("https://www.poderjudicial.es/search/indexAN.jsp", "_blank")}
+            >
+            Buscar Jurisprudencia
+            </button>
         </div>
 
-        <div className="chat-input-area">
-          <textarea value={userInput} onChange={(e) => setUserInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="¿Qué necesitas saber?" rows={2} />
-          {loading ? <button onClick={stopResponse} className="stop-button">⏹</button> : <button onClick={handleSend}>Enviar</button>}
+        <div className="legal-chat-wrapper">
+            <div className="legal-chat-box">
+            {messages.map((msg, i) => (
+                <div key={i} className={`chat-bubble ${msg.role}`}>
+                {msg.role === "assistant" ? (
+                    <div className="formatted-response">
+                    {formatLegalResponse(msg.text)}
+                    <div className="bubble-controls">
+                        <button 
+                        className="copy-button" 
+                        onClick={() => handleCopy(msg.text, i)} 
+                        onMouseEnter={() => setHoveredCopy(i)} 
+                        onMouseLeave={() => setHoveredCopy(null)}
+                        >
+                        📄
+                        </button>
+                        <button 
+                        className="download-button" 
+                        onClick={() => handleDownloadPDF(msg.text, msg.prompt)} 
+                        title="Descargar informe"
+                        >
+                        ⬇️
+                        </button>
+                        {copiedIndex === i && <span className="tooltip copied">¡Copiado!</span>}
+                        {hoveredCopy === i && <span className="tooltip">Copiar</span>}
+                    </div>
+                    </div>
+                ) : (
+                    <span>{msg.text}</span>
+                )}
+                </div>
+            ))}
+
+            {typingResponse && <div className="chat-bubble assistant formatted-response">{formatLegalResponse(typingResponse)}</div>}
+            {!typingResponse && isThinking && <div className="chat-bubble assistant"><span>Escribiendo{thinkingDots}</span></div>}
+            <div ref={chatEndRef} />
+            </div>
+
+            <div className="chat-input-area">
+            <textarea 
+                value={userInput} 
+                onChange={(e) => setUserInput(e.target.value)} 
+                onKeyDown={handleKeyDown} 
+                placeholder="¿Qué necesitas saber?" 
+                rows={2} 
+            />
+            {loading ? <button onClick={stopResponse} className="stop-button">⏹</button> : <button onClick={handleSend}>Enviar</button>}
+            </div>
         </div>
-      </div>
     </div>
+
   );
 };
 

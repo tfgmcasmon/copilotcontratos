@@ -22,9 +22,10 @@ def cargar_fragmentos():
             for item in datos:
                 fragmentos.append(item["texto"])
                 metadatos.append({
-                    "ley": os.path.basename(ruta).replace(".json", ""),
-                    "id": item["id"],
-                    "texto": item["texto"][:200] + "..."  # preview
+                    "ley": os.path.basename(ruta).replace(".json", ""),  # Ley
+                    "ley_id": item["ley_id"],  # Identificador de la ley
+                    "articulo": item["articulo"],  # Artículo
+                    "texto": item["texto"][:200] + "..."  # Previo al texto
                 })
     return fragmentos, metadatos
 

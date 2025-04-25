@@ -40,7 +40,7 @@ def cargar_leyes():
     with open(LEYES_PATH, "r", encoding="utf-8") as f:
         return json.load(f)
 
-def recuperar_fragmentos(query_vector, index, metadata, leyes, padding=100, k=5):
+def recuperar_fragmentos(query_vector, index, metadata, leyes, padding=150, k=10):
     D, I = index.search(query_vector, k)
     fragmentos_recuperados = []
 
@@ -54,12 +54,23 @@ def recuperar_fragmentos(query_vector, index, metadata, leyes, padding=100, k=5)
         ley_id = info["ley_id"]
         fragmento = leyes[ley_id][start:end]
 
-        fragmentos_recuperados.append({
-            "texto": fragmento,
-            "ley_id": ley_id,
-            "articulo": info.get("articulo_id", "desconocido"),
-            "ley_id_raw": ley_id
-        })
+        # Obtener el artículo si existe, si no, omitirlo
+        articulo = info.get("articulo_id", None)
+        
+        # Si no hay artículo, no lo añadimos
+        if articulo:
+            fragmentos_recuperados.append({
+                "texto": fragmento,
+                "ley_id": ley_id,
+                "articulo": articulo,  # solo si el artículo está disponible
+                "ley_id_raw": ley_id
+            })
+        else:
+            fragmentos_recuperados.append({
+                "texto": fragmento,
+                "ley_id": ley_id,
+                "ley_id_raw": ley_id
+            })
 
     return fragmentos_recuperados
 
@@ -105,7 +116,7 @@ def get_fragmentos_legales(pregunta, k=5, max_tokens=1200, padding=100):
         raw_ley_id = meta.get("ley_id", "").strip().lower()
         normalizado = normalizar_ley_id(raw_ley_id)
         ley_legible = LEY_ID_TO_NAME.get(normalizado, raw_ley_id)
-        articulo = meta.get("articulo_id", "desconocido")
+        articulo = meta.get("articulo_id", None)  # No poner 'desconocido'
 
         if "start" in meta and "end" in meta:
             start = max(0, meta["start"] - padding)
@@ -117,14 +128,23 @@ def get_fragmentos_legales(pregunta, k=5, max_tokens=1200, padding=100):
         else:
             texto = meta.get("texto", "")
 
-        fragmentos_raw.append({
-            "ley_id": ley_legible,
-            "ley_id_raw": raw_ley_id,
-            "articulo": articulo,
-            "texto": texto.strip()
-        })
+        # Solo agregar el artículo si está disponible
+        if articulo:
+            fragmentos_raw.append({
+                "ley_id": ley_legible,
+                "ley_id_raw": raw_ley_id,
+                "articulo": articulo,
+                "texto": texto.strip()
+            })
+        else:
+            fragmentos_raw.append({
+                "ley_id": ley_legible,
+                "ley_id_raw": raw_ley_id,
+                "texto": texto.strip()
+            })
 
     return limitar_longitud(fragmentos_raw, max_tokens=max_tokens)
+
 
 def main():
     pregunta = input("❓ Pregunta legal en lenguaje natural: ").strip()
@@ -133,7 +153,12 @@ def main():
     resultados = get_fragmentos_legales(pregunta)
 
     for r in resultados:
-        print(f"📘 Ley: {r['ley_id']} ({r['ley_id_raw']}), Artículo: {r['articulo']}\n📝 {r['texto']}\n" + "-"*80)
+        # Si el artículo no está presente, no lo mostramos
+        if "articulo" in r:
+            print(f"📘 Ley: {r['ley_id']} ({r['ley_id_raw']}), Artículo: {r['articulo']}\n📝 {r['texto']}\n" + "-"*80)
+        else:
+            print(f"📘 Ley: {r['ley_id']} ({r['ley_id_raw']}), \n📝 {r['texto']}\n" + "-"*80)
+
 
 if __name__ == "__main__":
     main()

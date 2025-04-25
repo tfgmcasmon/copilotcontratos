@@ -281,3 +281,33 @@
   font-weight: bold;
   user-select: none;
 }
+
+/* Estilo del modo oscuro */
+body.dark-mode {
+  background-color: #121212;
+  color: white;
+}
+
+.dark-mode .chat-bubble {
+  background-color: #333;
+  color: white;
+}
+
+.dark-mode .chat-header, .dark-mode .chat-title {
+  background-color: #80002a; /* Un color más oscuro para las cabeceras */
+}
+
+.dark-mode .chat-input-area {
+  background-color: #222;
+  color: white;
+}
+
+.dark-mode .button {
+  background-color: #444;
+  color: white;
+}
+
+.dark-mode .copy-button {
+  color: #f0f0f0;
+}
+

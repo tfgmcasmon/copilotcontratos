@@ -486,7 +486,7 @@ def legal_chat():
 
         # Construir contexto legal con formato
         contexto = "\n\n".join([
-            f"📘 **Ley:** {f['ley_id'].replace('_', ' ').title()}\n📝 **Artículo {f['articulo']}**\n{f['texto']}"
+            f"📘 **Ley:** {f['ley_id'].replace('_', ' ').title()}\n📝 {f['texto']}"
             for f in fragmentos if f is not None
         ])
 
@@ -512,17 +512,16 @@ def legal_chat():
         answer = response.choices[0].message.content.strip()
         print("📤 Respuesta generada:", answer[:300], "..." if len(answer) > 300 else "")
 
-        # Añadir referencias legales al final
+        # Añadir referencias legales al final (sin la parte del artículo)
         referencias = []
         for frag in fragmentos:
             if frag is None:
                 continue
             ley_legible = frag["ley_id"].replace("_", " ").replace("c digo", "Código").title()
-            articulo = frag["articulo"]
             texto = frag["texto"].strip()
             if len(texto.split()) > 150:
                 texto = " ".join(texto.split()[:150]) + "..."
-            referencias.append(f"**{ley_legible}, artículo {articulo}.** {texto}")
+            referencias.append(f"**{ley_legible}.** {texto}")
 
         if referencias:
             answer += "\n\n---\n\n📚 **Leyes citadas:**\n\n" + "\n\n".join(referencias)

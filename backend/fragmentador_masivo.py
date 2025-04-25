@@ -15,7 +15,7 @@ def get_boe_html(url):
     else:
         raise Exception(f"Error al acceder a {url}")
 
-def extract_articles(html):
+def extract_articles(html, ley_id):
     soup = BeautifulSoup(html, 'lxml')
     content_div = soup.find('div', {'id': 'contenido'})  # donde está el texto real
     if not content_div:
@@ -23,18 +23,33 @@ def extract_articles(html):
 
     articles = []
     current_article = ""
+    current_articulo_id = None
 
+    # Recorremos el contenido en busca de artículos y extraemos texto
     for tag in content_div.find_all(["p", "h3", "h4", "h5"]):
         text = tag.get_text().strip()
+
+        # Si encontramos un artículo
         if re.match(r"^Artículo\s+\d+[\.º]?", text):
+            # Guardamos el artículo anterior, si existe
             if current_article:
-                articles.append(current_article.strip())
+                articles.append({
+                    "texto": current_article.strip(),
+                    "ley_id": ley_id,
+                    "articulo": current_articulo_id
+                })
             current_article = text
+            current_articulo_id = text.split()[1]  # Extraemos el número del artículo
         elif current_article:
             current_article += "\n" + text
 
+    # Añadimos el último artículo encontrado
     if current_article:
-        articles.append(current_article.strip())
+        articles.append({
+            "texto": current_article.strip(),
+            "ley_id": ley_id,
+            "articulo": current_articulo_id
+        })
 
     return articles
 
@@ -42,7 +57,7 @@ def guardar_fragmentos(nombre_archivo, fragmentos):
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     ruta = os.path.join(OUTPUT_DIR, nombre_archivo)
     with open(ruta, "w", encoding="utf-8") as f:
-        json.dump([{"id": i, "texto": frag} for i, frag in enumerate(fragmentos)], f, ensure_ascii=False, indent=2)
+        json.dump(fragmentos, f, ensure_ascii=False, indent=2)
 
 def slugify(texto):
     return re.sub(r'[^a-zA-Z0-9_-]', '_', texto.lower())[:50]
@@ -55,7 +70,7 @@ def main():
         print(f"📄 Procesando: {ley['title']}")
         try:
             html = get_boe_html(ley["url"])
-            fragmentos = extract_articles(html)
+            fragmentos = extract_articles(html, ley["title"])  # Pasamos la ley como ID
             archivo_salida = slugify(ley["title"]) + ".json"
             guardar_fragmentos(archivo_salida, fragmentos)
             print(f"✅ Guardado: {archivo_salida} ({len(fragmentos)} artículos)")
