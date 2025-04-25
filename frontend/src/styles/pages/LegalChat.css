@@ -1,0 +1,283 @@
+.legal-chat-layout {
+  padding: 1rem 3rem;
+  background-color: var(--bg-color);
+  min-height: 100vh;
+}
+
+.chat-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem 0 2rem;
+  width: 100%;
+  background-color: white;
+  border-bottom: 1px solid #eee;
+}
+
+.chat-header {
+  text-align: center;
+  flex-grow: 1;
+}
+
+
+
+.chat-subtitle {
+  font-size: 0.95rem;
+  color: #555;
+  font-weight: 400;
+}
+
+.legal-chat-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 60px);
+  max-width: 1200px;
+  margin: auto;
+  padding: 1.5rem;
+}
+
+.chat-title {
+  font-size: 2.8rem;
+  font-weight: bold;
+  margin-bottom: 0.2rem;
+  color: var(--text-color);
+  font-family: 'Playfair Display', serif;
+  font-weight: 800;
+}
+
+
+
+.legal-chat-box {
+  flex: 1;
+  background: #f6f6f6;
+  padding: 1rem;
+  border-radius: 8px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.chat-bubble {
+  max-width: 75%;
+  padding: 0.75rem 1rem;
+  border-radius: 16px;
+  white-space: pre-wrap;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.chat-bubble.user {
+  background-color: #e6e6e6;
+  align-self: flex-end;
+  color: #222;
+  border-bottom-right-radius: 0;
+}
+
+.chat-bubble.assistant {
+  background-color: #ffffff;
+  align-self: flex-start;
+  color: #333;
+  border-bottom-left-radius: 0;
+  border: 1px solid #ccc;
+}
+
+.chat-input-area {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.chat-input-area textarea {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  resize: none;
+  border: 1px solid #ccc;
+}
+
+.chat-input-area button {
+  padding: 0.6rem 1.2rem;
+  background-color: var(--main-color, #80002a);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.typing {
+  display: flex;
+  gap: 0.3rem;
+  font-size: 18px;
+  color: #aaa;
+}
+
+.typing .dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background-color: #999;
+  border-radius: 50%;
+  animation: bounce 1.3s infinite ease-in-out;
+}
+
+
+.typing .dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.typing .dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.6;
+  }
+  40% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+.chat-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem 0 2rem;
+  width: 100%;
+}
+
+.jurisprudencia-button {
+  background-color: var(--themis-burdeos); 
+  color: white;
+  border: none;
+  padding: 0.5rem 1.2rem;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.jurisprudencia-button:hover {
+  background-color: var(--themis-burdeos-claro); 
+}
+
+.formatted-response h3 {
+  font-size: 1.1rem;
+  margin-top: 1rem;
+  color: var(--themis-burdeos); 
+}
+
+.formatted-response p {
+  margin: 0.3rem 0;
+  line-height: 1.5;
+  color: #333;
+}
+
+.formatted-response strong {
+  font-weight: bold;
+  color: #000;
+}
+
+.legal-chat-box {
+  scroll-behavior: smooth;
+}
+
+.copy-tooltip-wrapper {
+  position: relative;
+  display: inline-block;
+  margin-top: -8px;
+  margin-right: -6px;
+}
+
+.copy-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: #999;
+  padding: 2px;
+  border-radius: 4px;
+}
+
+.copy-button:hover {
+  color: #4b0d1f;
+  background-color: #f1f1f1;
+}
+
+.tooltip {
+  position: absolute;
+  top: -28px;
+  right: 0;
+  background-color: #111;
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  z-index: 10;
+  opacity: 0.9;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.download-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: #4b0d1f;
+  margin-left: 0.5rem;
+}
+
+.mode-switch {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  margin-right: 1rem;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.mode-switch input[type="checkbox"] {
+  appearance: none;
+  width: 40px;
+  height: 20px;
+  background-color: #ccc;
+  border-radius: 20px;
+  position: relative;
+  outline: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-right: 8px;
+}
+
+.mode-switch input[type="checkbox"]::before {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background-color: white;
+  border-radius: 50%;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.3s ease;
+}
+
+.mode-switch input[type="checkbox"]:checked {
+  background-color: #80002a;
+}
+
+.mode-switch input[type="checkbox"]:checked::before {
+  transform: translateX(20px);
+}
+
+.switch-label {
+  color: #80002a;
+  font-weight: bold;
+  user-select: none;
+}

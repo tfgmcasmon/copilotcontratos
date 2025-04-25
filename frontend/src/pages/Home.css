@@ -1,0 +1,109 @@
+
+  
+  .home-container {
+    padding: 3rem 2rem;
+    background-color: var(--themis-gris-suave);
+    background: linear-gradient(to bottom, #fafafa 0%, #f5f5f5 100%);
+    min-height: 100vh;
+  }
+  
+  .home-title {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #2c2c2c;
+    text-align: center;
+    margin-bottom: 0.3rem;
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+  }
+
+  
+  
+  .home-subtitle {
+    text-align: center;
+    color: #666;
+    font-size: 1rem;
+    margin-bottom: 2.5rem;
+  }
+  
+  .modules-container {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 2.5rem;
+  }
+  
+  .module-card {
+    background-color: white;
+    border: 1px solid var(--themis-borde);
+    border-radius: 14px;
+    width: 320px;
+    padding: 28px 24px;
+    text-align: center;
+    transition: all 0.5s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    position: relative;
+    animation: fadeInStaggered 0.5s ease forwards;
+    animation-delay: calc(var(--i) * 0.2s);
+  }
+
+  .module-card::before {
+    content: "";
+    display: block;
+    height: 5px;
+    width: 100%;
+    background-color: var(--themis-burdeos);
+    position: absolute;
+    top: 0;
+    left: 0;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+  }
+  
+  
+  .module-card:hover {
+    border-color: var(--themis-burdeos);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    transform: translateY(-5px);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+  
+  .module-icon {
+    font-size: 52px;
+    margin-bottom: 18px;
+    color: var(--themis-burdeos);
+  }
+  
+  .module-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    color: #1f1f1f;
+  }
+  
+  .module-description {
+    font-size: 0.95rem;
+    color: var(--themis-gris-texto);
+    line-height: 1.5;
+    margin-bottom: 22px;
+    min-height: 60px;
+  }
+  
+  .go-button {
+    background-color: var(--themis-burdeos);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    width: 100%;
+    padding: 12px 0;
+    font-weight: 600;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+  }
+  
+  .go-button:hover {
+    background-color: var(--themis-burdeos-claro);
+  }
+  

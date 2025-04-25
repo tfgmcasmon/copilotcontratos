@@ -7,9 +7,9 @@ import jsPDF from "jspdf";
 const formatLegalResponse = (text) => {
   const lines = text.split(/\n+/);
   return lines.map((line, i) => {
-    if (line.startsWith("Respuesta:")) return <h3 key={i}>Respuesta</h3>;
-    if (line.startsWith("📚")) return <h3 key={i}>Leyes citadas</h3>;
-    if (line.startsWith("🔎")) return <h3 key={i}>Palabras clave</h3>;
+    if (line.startsWith("Respuesta:")) return <h3 key={i}>🧾 Respuesta</h3>;
+    if (line.startsWith("📚")) return <h3 key={i}>📚 Leyes citadas</h3>;
+    if (line.startsWith("🔎")) return <h3 key={i}>🔎 Palabras clave</h3>;
     if (line.trim() === "---") return <hr key={i} />;
     const formattedLine = line.replace(/\*\*(.+?)\*\*/g, (_, boldText) => `<strong>${boldText}</strong>`);
     return <p key={i} dangerouslySetInnerHTML={{ __html: formattedLine }} />;
@@ -27,7 +27,6 @@ const LegalChat = ({ onBack }) => {
   const [copiedIndex, setCopiedIndex] = useState(null);
   const chatEndRef = useRef(null);
   const typingIntervalRef = useRef(null);
-  const [expertMode, setExpertMode] = useState(false);
 
   const stopResponse = () => {
     clearInterval(typingIntervalRef.current);
@@ -134,14 +133,7 @@ const LegalChat = ({ onBack }) => {
     setIsThinking(true);
     setTypingResponse("");
 
-    const modeInstruction = expertMode
-      ? "Responde como un jurista experto, utilizando lenguaje técnico y preciso, sin simplificar."
-      : "Responde de forma clara y explicativa, como si se lo explicaras a un cliente sin conocimientos jurídicos.";
-
-    const messagePayload = [
-      { role: "system", content: modeInstruction },
-      { role: "user", content: trimmed }
-    ];
+    const messagePayload = [{ role: "user", content: trimmed }];
     console.log("🧠 Enviando al backend:", JSON.stringify(messagePayload, null, 2));
 
     try {
@@ -166,8 +158,6 @@ const LegalChat = ({ onBack }) => {
           clearInterval(typingIntervalRef.current);
           setTypingResponse("");
           setMessages((prev) => [...prev, { role: "assistant", text: response, prompt: trimmed }]);
-          setIsThinking(false);
-          setLoading(false);
         }
       }, 20);
 
@@ -210,12 +200,6 @@ const LegalChat = ({ onBack }) => {
           <h2 className="chat-title">Asistente Legal</h2>
           <p className="chat-subtitle">Realiza tus consultas legales y recibe respuestas fundamentadas en segundos.</p>
         </div>
-        <div className="mode-switch">
-          <label>
-            <input type="checkbox" checked={expertMode} onChange={() => setExpertMode(!expertMode)} />
-            <span className="switch-label">{expertMode ? "Modo experto" : "Modo explicativo"}</span>
-          </label>
-        </div>
         <button className="jurisprudencia-button" onClick={() => window.open("https://www.poderjudicial.es/search/indexAN.jsp", "_blank")}>Buscar Jurisprudencia</button>
       </div>
 
@@ -244,7 +228,6 @@ const LegalChat = ({ onBack }) => {
           ))}
 
           {typingResponse && <div className="chat-bubble assistant formatted-response">{formatLegalResponse(typingResponse)}</div>}
-          {!typingResponse && isThinking && <div className="chat-bubble assistant"><span>Escribiendo{thinkingDots}</span></div>}
           <div ref={chatEndRef} />
         </div>
 

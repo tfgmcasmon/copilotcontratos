@@ -291,7 +291,7 @@ def generate_contract_context():
 
         # Llamada a OpenAI
         response = client.chat.completions.create(
-            model="mistralai/mistral-7b-instruct:free",
+            model="mistralai/mistral-7b-instruct",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=20,  # Limitamos la longitud del título
             temperature=0.2
@@ -335,7 +335,7 @@ def track_changes():
         context = get_contract_context(contract_type)
 
         response = client.chat.completions.create(
-            model="mistralai/mistral-7b-instruct:free",
+            model="mistralai/mistral-7b-instruct",
             messages=[{
                 "role": "user",
                 "content": f"{context} Continúa el siguiente texto, evitando placeholders y repeticiones: {changes}"
@@ -463,68 +463,80 @@ def verify_contract_data():
 def legal_chat():
     try:
         data = request.get_json()
+        print("📥 JSON recibido:", data)
+
         messages = data.get("messages", [])
         if not messages:
+            print("⚠️ No se recibió historial de mensajes.")
             return jsonify({"error": "No se recibió historial de mensajes."}), 400
 
         pregunta_usuario = messages[-1]["content"]
+        modo_instruccion = next((msg["content"] for msg in messages if msg["role"] == "system"), "")
 
-        # Recuperar fragmentos legales completos
+        print("❓ Pregunta del usuario:", pregunta_usuario)
+        print("🧠 Instrucción de modo:", modo_instruccion)
+
+        # Recuperar fragmentos legales
         fragmentos = get_fragmentos_legales(pregunta_usuario)
-    
+        if fragmentos is None:
+            print("⚠️ No se encontraron fragmentos legales relevantes.")
+            fragmentos = []
+
+        print(f"📚 Fragmentos legales recuperados: {len(fragmentos)}")
 
         # Construir contexto legal con formato
         contexto = "\n\n".join([
             f"📘 **Ley:** {f['ley_id'].replace('_', ' ').title()}\n📝 **Artículo {f['articulo']}**\n{f['texto']}"
-            for f in fragmentos
+            for f in fragmentos if f is not None
         ])
 
-        # Prompt con contexto legal
+        # Prompt para Mistral: mantener artículos pero pedir explicación
         prompt = (
-            f"Teniendo en cuenta los siguientes artículos legales relevantes:\n\n{contexto}\n\n"
-            f"Responde a la siguiente consulta en español claro, con base legal, y si procede, estructura visual como listas o negritas. "
-            f"No inventes leyes ni jurisprudencia. Si la ley no contempla directamente el caso, explica las posibilidades.\n\n"
+            f"{modo_instruccion}\n\n"
+            f"Ten en cuenta los siguientes artículos legales:\n\n{contexto}\n\n"
+            f"Ahora responde a la siguiente consulta de forma clara, explicativa y argumentada. "
+            f"No copies literalmente los artículos ni los presentes como una lista. "
+            f"Extrae solo lo necesario para fundamentar la respuesta y ofrece una explicación profesional y bien estructurada.\n\n"
             f"❓ Pregunta: {pregunta_usuario}"
         )
 
-        # Llamada a Mistral vía OpenRouter
+        print("🧠 Prompt generado para Mistral:\n", prompt[:500], "..." if len(prompt) > 500 else "")
+
         response = client.chat.completions.create(
-            model="mistralai/mistral-7b-instruct:free",
+            model="mistralai/mistral-7b-instruct",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.4,
             max_tokens=700
         )
 
         answer = response.choices[0].message.content.strip()
+        print("📤 Respuesta generada:", answer[:300], "..." if len(answer) > 300 else "")
 
-                # Generar las citas legales completas al final
+        # Añadir referencias legales al final
         referencias = []
         for frag in fragmentos:
+            if frag is None:
+                continue
             ley_legible = frag["ley_id"].replace("_", " ").replace("c digo", "Código").title()
             articulo = frag["articulo"]
             texto = frag["texto"].strip()
-
-            # Cortar si es muy largo
             if len(texto.split()) > 150:
                 texto = " ".join(texto.split()[:150]) + "..."
-
-            referencia = f"**{ley_legible}, artículo {articulo}.** {texto}"
-            referencias.append(referencia)
+            referencias.append(f"**{ley_legible}, artículo {articulo}.** {texto}")
 
         if referencias:
             answer += "\n\n---\n\n📚 **Leyes citadas:**\n\n" + "\n\n".join(referencias)
 
-        # 🔍 Generar palabras clave con Mistral para búsqueda de jurisprudencia
+        # Generar palabras clave para búsqueda
         keywords = generar_query_juridica_mistral(pregunta_usuario)
         if keywords:
             answer += f"\n\n---\n\n🔎 **Palabras clave para buscar jurisprudencia:**\n{keywords}"
 
         return jsonify({"response": answer}), 200
 
-
     except Exception as e:
         print(f"❌ Error en /legalChat: {e}")
-        return jsonify({"error": "Error interno al procesar la consulta legal."}), 500
+        return jsonify({"error": f"Error interno al procesar la consulta legal: {str(e)}"}), 500
         
 if __name__ == "__main__":
     print("Servidor Flask corriendo en http://127.0.0.1:8080")

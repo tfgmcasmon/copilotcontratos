@@ -25,7 +25,7 @@ def generar_query_juridica_mistral(pregunta_usuario):
 
     try:
         response = client.chat.completions.create(
-            model="mistralai/mistral-7b-instruct:free",
+            model="mistralai/mistral-7b-instruct",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}

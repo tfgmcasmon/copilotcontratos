@@ -4,7 +4,7 @@ import os, json
 
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
-    api_key=json.load(open(os.path.join(os.path.dirname(__file__), '..', 'secrets.json')))["openai_api_key"]
+    api_key=json.load(open(os.path.join(os.path.dirname(__file__), '../..', 'secrets.json')))["openai_api_key"]
 )
 
 def analizar_tarea_con_llm(titulo, descripcion, tipo, urgencia):
