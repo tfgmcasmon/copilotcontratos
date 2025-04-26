@@ -18,6 +18,8 @@ const Copilot = ({ onBack }) => {
   const [errorMessage, setErrorMessage] = useState("");
   const debounceTimer = useRef(null);
   const [suggestion,setSuggestion]=useState("");
+  const [legalAnalysis, setLegalAnalysis] = useState("");
+
 
   useEffect(() => {
     fetchContractTitle(contractType, setInputText, setContractType, setErrorMessage);
@@ -57,16 +59,50 @@ const Copilot = ({ onBack }) => {
       alert("El contrato está vacío.");
       return;
     }
-
+  
     const doc = new jsPDF();
+    doc.setFont("times", "normal");
+  
+    // Título principal
+    doc.setFontSize(18);
+    doc.text("CONTRATO DE COMPRAVENTA", 105, 20, { align: "center" });
+  
+    // Cuerpo del contrato
+    doc.setFontSize(12);
     const lines = doc.splitTextToSize(inputText, 180);
-    doc.text(lines, 15, 20);
+    doc.text(lines, 15, 40);
+  
+    // Firmas
+    doc.line(30, 270, 80, 270);
+    doc.text("Firma del Comprador", 30, 275);
+  
+    doc.line(130, 270, 180, 270);
+    doc.text("Firma del Vendedor", 130, 275);
+  
     doc.save("contrato.pdf");
   };
+  
 
   const handleVerifyContract = () => {
     verifyContractData(inputText, setVerificationResult, setVerifying);
   };
+
+  const handleRunLegalCheck = async () => {
+    try {
+      const response = await fetch("http://127.0.0.1:8080/legalCheck", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: inputText, contract_type: contractType }),
+      });
+  
+      const data = await response.json();
+      setLegalAnalysis(data.analysis);
+    } catch (err) {
+      console.error("Error al verificar contrato:", err);
+    }
+  };
+  
+  
 
   return (
     <div className="copilot-layout">
@@ -97,6 +133,7 @@ const Copilot = ({ onBack }) => {
             <button className="toolbar-btn" onClick={handleVerifyContract}>
               {verifying ? "Verificando..." : " Verificar"}
             </button>
+            <button className="toolbar-btn" onClick={handleRunLegalCheck}>Revisión Jurídica</button>
           </div>
         </div>
 
@@ -135,6 +172,13 @@ const Copilot = ({ onBack }) => {
             {verificationResult?.status === "error" && (
               <p className="error">{verificationResult.message}</p>
             )}
+            {legalAnalysis && (
+              <>
+                <h3 className="suggestion-title">🧾 Informe Jurídico:</h3>
+                <p className="suggestion-text">{legalAnalysis}</p>
+                </>
+            )}
+
           </aside>
         </div>
       </div>

@@ -1,20 +1,18 @@
 import re
 
 def clean_and_cut_autocomplete(text, existing_text, is_first_completion):
+
+    # Quita espacios extra y normaliza
     text = text.strip()
 
-    # Evita repetir el título
-    if is_first_completion:
-        normalized_title = re.sub(r'[^a-zA-Z0-9]', '', existing_text.lower())
-        normalized_text = re.sub(r'[^a-zA-Z0-9]', '', text.lower())
-        if normalized_text.startswith(normalized_title):
-            text = text[len(existing_text):].strip()
+    # Evita repetir lo ya escrito
+    if text.lower().startswith(existing_text.lower()):
+        text = text[len(existing_text):].strip()
 
-    # Elimina placeholders
+    # Quita placeholders genéricos y títulos repetidos
     placeholders = [
-        r"\[.*?\]", r"\(.*?\)", r"\{.*?\}", r"XXXX+", r"DNI:\s*X{6,10}",
-        r"DNI/NIE:\s*_+", r"Dirección:\s*_+", r"Fecha:\s*\d{0,2}/\d{0,2}/\d{0,4}",
-        r"_{2,}", r"\.\.\.", r'" "', r"\s*_\s*"
+        r"\[.*?\]", r"\(.*?\)", r"\{.*?\}",
+        r"XXXX+", r"NOMBRE", r"DNI", r"[A-Z\s]{4,}", r"_{2,}", r"\.\.\."
     ]
     for pattern in placeholders:
         match = re.search(pattern, text)
@@ -22,10 +20,8 @@ def clean_and_cut_autocomplete(text, existing_text, is_first_completion):
             text = text[:match.start()].strip()
             break
 
-    # Evita duplicados
-    normalized_existing = re.sub(r'\s+', ' ', existing_text.lower().strip())
-    normalized_text = re.sub(r'\s+', ' ', text.lower().strip())
-    if normalized_text in normalized_existing:
-        return ""
+    # Reemplaza múltiples saltos de línea por solo uno
+    text = re.sub(r"\n{2,}", "\n", text)
+    text = re.sub(r"\s{2,}", " ", text)
 
     return text
