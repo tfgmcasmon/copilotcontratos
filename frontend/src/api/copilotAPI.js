@@ -1,17 +1,17 @@
 // src/api/copilotAPI.js
-export const fetchContractTitle = async (type, setInputText, setContractType, setErrorMessage) => {
+export const fetchContractTitle = async (contractName, setInputText, setContractName, setErrorMessage) => {
   try {
     const response = await fetch("http://127.0.0.1:8080/generateContractContext", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contract_type: type }),
+      body: JSON.stringify({ contract_name: contractName}),
     });
 
     if (response.ok) {
       const data = await response.json();
       const title = data.prompt.split("\n")[0];
       setInputText(title || "");
-      setContractType(type);
+      setContractName(contractName);
       setErrorMessage("");
     } else {
       setErrorMessage("Error al obtener el título del contrato.");
@@ -22,27 +22,42 @@ export const fetchContractTitle = async (type, setInputText, setContractType, se
   }
 };
 
-export const fetchAutocomplete = async (text, type, setAutocompleteText) => {
+export const fetchAutocomplete = async (currentText, contractName, setAutocompleteText) => {
   try {
     const response = await fetch("http://127.0.0.1:8080/trackChanges", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ changes: text, contract_type: type }),
+      body: JSON.stringify({
+        changes: currentText,
+        contract_name: contractName
+      }),
     });
 
     if (response.ok) {
       const data = await response.json();
-      setAutocompleteText(
-        (data.autocomplete || "")
-          .replace(/\n+/g, " ")        // limpia saltos de línea generados por el modelo
-          .replace(/\s{2,}/g, " ")     // limpia espacios dobles
-          .trim()
-      );      
+      let suggestion = data.autocomplete || "";
+
+      // 🔥 NUEVO: Cortar si hay doble salto de línea
+      if (suggestion.includes("\n\n")) {
+        suggestion = suggestion.split("\n\n")[0];
+      }
+
+      // 🔥 NUEVO: Cortar si sugerencia es demasiado larga
+      if (suggestion.length > 300) {
+        suggestion = "";
+      }
+
+      // 🔥 NUEVO: Limpiar espacios
+      suggestion = suggestion.replace(/\s{2,}/g, " ").trim();
+
+      setAutocompleteText(suggestion);
     } else {
-      console.error("Error al obtener sugerencia:", response.statusText);
+      console.error("Error al obtener sugerencia de autocompletado");
+      setAutocompleteText("");
     }
   } catch (error) {
-    console.error("Error al conectar con el backend:", error);
+    console.error("Error al conectar para autocompletar:", error);
+    setAutocompleteText("");
   }
 };
 

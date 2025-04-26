@@ -10,6 +10,7 @@ from gestor_tareas.router import gestor_tareas_bp
 from api.legalchat_routes import legalchat_bp
 from api.contract_context_routes import contract_context_bp
 from api.legal_verifier_routes import legalcheck_bp
+from api.render_routes import render_bp;
 
 def create_app():
     app = Flask(__name__)
@@ -24,6 +25,7 @@ def create_app():
     app.register_blueprint(legalchat_bp)
     app.register_blueprint(contract_context_bp)
     app.register_blueprint(legalcheck_bp)
+    app.register_blueprint(render_bp)
 
     return app
 
