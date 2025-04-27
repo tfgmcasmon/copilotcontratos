@@ -23,9 +23,10 @@ const Copilot = ({ onBack }) => {
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [loadingRender, setLoadingRender] = useState(false);
 
+  /*
   useEffect(() => {
     fetchContractTitle(contractName, setInputText, setContractName, setErrorMessage);
-  }, [contractName]);
+  }, [contractName]);*/
 
   const handleInputChange = (e) => {
     const text = e.target.value;
