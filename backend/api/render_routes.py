@@ -27,7 +27,7 @@ def render_contract():
     response = client.chat.completions.create(
         model="mistralai/mistral-7b-instruct",
         messages=[{"role": "user", "content": prompt}],
-        max_tokens=1000,
+        max_tokens=4096,
         temperature=0.2
     )
 

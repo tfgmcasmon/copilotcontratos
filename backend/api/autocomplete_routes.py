@@ -129,6 +129,7 @@ def track_changes():
 
     anonymized_completion = response.choices[0].message.content.strip()
 
+
     # 🔥 Revertir reemplazos para el usuario
     final_completion = revert_replacements(anonymized_completion, replacements)
 

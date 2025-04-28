@@ -1,0 +1,41 @@
+.suggestion-card {
+    background-color: #f0f7ff;
+    border-left: 4px solid #4096ff;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .suggestion-card-title {
+    font-weight: bold;
+    font-size: 16px;
+    color: #0050b3;
+  }
+  
+  .suggestion-card-info {
+    font-size: 14px;
+    color: #003a8c;
+  }
+  
+  .suggestion-card-motivo {
+    font-size: 13px;
+    color: #1d39c4;
+  }
+  
+  .suggestion-card-status {
+    font-size: 13px;
+    margin-top: 8px;
+    font-weight: bold;
+  }
+  
+  .suggestion-card-status.aceptada {
+    color: #389e0d;
+  }
+  
+  .suggestion-card-status.rechazada {
+    color: #cf1322;
+  }
+  

@@ -1,0 +1,22 @@
+.alert-card {
+    background-color: #ffe5e5;
+    border-left: 4px solid #ff4d4f;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .alert-card-type {
+    font-weight: bold;
+    font-size: 16px;
+    color: #cc0000;
+  }
+  
+  .alert-card-message {
+    font-size: 14px;
+    color: #800000;
+  }
+  

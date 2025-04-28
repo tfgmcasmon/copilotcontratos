@@ -1,4 +1,4 @@
-from buscar_jurisprudencia_boe import buscar_sentencias_boe
+from chatlegal_others.buscar_jurisprudencia_boe import buscar_sentencias_boe
 
 # Simulamos una pregunta legal
 consulta_usuario = "¿Si mi hijo me maltrata puedo desheredarlo?"

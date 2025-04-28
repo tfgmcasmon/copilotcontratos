@@ -1,0 +1,79 @@
+/* VisionBoard.css */
+.vision-board {
+    padding: 40px;
+    background-color: var(--bg-color);
+    min-height: 100vh;
+  }
+  
+  .vision-board-title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--text-color);
+    margin-bottom: 30px;
+    text-align: center;
+  }
+  
+  .filters {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+  }
+  
+  select {
+    padding: 10px;
+    border-radius: 6px;
+    border: var(--border);
+  }
+  
+  .kanban-board {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+  }
+  
+  .team-column {
+    background-color: #ffffff;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .task-card {
+    background-color: #f1f3f5;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 12px;
+  }
+  
+  .task-card.priority-high {
+    background-color: #ff4d4f;
+    color: white;
+  }
+  
+  .task-card.priority-medium {
+    background-color: #ffbb33;
+    color: white;
+  }
+  
+  .task-card.priority-low {
+    background-color: #73c800;
+    color: white;
+  }
+  
+  .task-card-status {
+    font-size: 0.8rem;
+    color: #6c757d;
+  }
+  
+  .alert-section,
+  .suggestion-section {
+    margin-top: 30px;
+  }
+  
+  .alert-grid,
+  .suggestion-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+  }
+  

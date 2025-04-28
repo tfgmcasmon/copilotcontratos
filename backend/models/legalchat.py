@@ -1,7 +1,7 @@
 # backend/models/legalchat.py
 
 from generar_query_mistral import generar_query_juridica_mistral
-from buscar_fragmentos import get_fragmentos_legales
+from chatlegal_others.buscar_fragmentos import get_fragmentos_legales
 from config import OPENROUTER_API_KEY
 from openai import OpenAI
 import os

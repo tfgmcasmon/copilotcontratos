@@ -23,9 +23,24 @@ def anonymize_text(text):
 
 
 def revert_replacements(text, replacements):
-    for placeholder, original_value in replacements.items():
-        text = text.replace(placeholder, original_value)
-    return text
+    if not replacements:
+        return text
+
+    # Ordenar para reemplazar primero los más largos (por seguridad)
+    sorted_replacements = sorted(replacements.items(), key=lambda x: -len(x[0]))
+
+    # Construir patrón regex
+    pattern = re.compile("|".join(re.escape(k) for k, _ in sorted_replacements))
+
+    # Función de reemplazo segura
+    def substitute(match):
+        return replacements.get(match.group(0), match.group(0))
+
+    # Aplicar reemplazo atómico
+    reverted_text = pattern.sub(substitute, text)
+
+    return reverted_text
+
 
 
 def replace_pattern(text, pattern, label, replacements):

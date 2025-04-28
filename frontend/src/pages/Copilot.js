@@ -4,6 +4,8 @@ import BackButton from "../components/BackButton";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import html2pdf from "html2pdf.js";
+import Markdown from 'markdown-to-jsx';
+
 import {
   fetchContractTitle,
   fetchAutocomplete,
@@ -90,6 +92,7 @@ const Copilot = ({ onBack }) => {
       if (response.ok) {
         const data = await response.json();
         const cleanedHTML = (data.rendered_html || "").replace(/```html|```/g, "").trim();
+        //cleanedHTML = cleanedHTML.replace(/\bFIRMAN\b/g, "<strong>FIRMAN</strong>");
         setRenderedContract(cleanedHTML);
         setIsPreviewMode(true);
       } else {
@@ -170,6 +173,94 @@ const Copilot = ({ onBack }) => {
     doc.save("contrato_renderizado.pdf");
   };
 
+  const handleSaveRenderedContractPro = () => {
+    if (!renderedContract.trim()) {
+      alert("El contrato está vacío.");
+      return;
+    }
+  
+    const doc = new jsPDF();
+    doc.setFont("times", "normal");
+  
+    // Título principal
+    doc.setFontSize(18);
+    doc.setFont("times", "bold");
+    doc.text(contractName.toUpperCase(), 105, 20, { align: "center" });
+  
+    // Disclaimer legal
+    doc.setFontSize(10);
+    const disclaimer = getDisclaimerByContractName(contractName);
+    const disclaimerLines = doc.splitTextToSize(disclaimer, 180);
+    doc.text(disclaimerLines, 15, 30);
+  
+    // Crear contenedor DOM virtual
+    const container = document.createElement("div");
+    container.innerHTML = renderedContract;
+  
+    let currentY = 50;
+  
+    function processNode(node) {
+      if (currentY > 270) {
+        doc.addPage();
+        currentY = 20;
+      }
+  
+      if (node.nodeType === 3) { // Text node
+        const text = node.nodeValue.trim();
+        if (text) {
+          doc.setFontSize(12);
+          doc.setFont("times", "normal");
+          const lines = doc.splitTextToSize(text, 180);
+          doc.text(lines, 15, currentY);
+          currentY += lines.length * 7;
+        }
+      } else if (node.tagName === "STRONG") {
+        const text = node.innerText.trim();
+        if (text) {
+          doc.setFontSize(14);
+          doc.setFont("times", "bold");
+          const lines = doc.splitTextToSize(text, 180);
+          doc.text(lines, 15, currentY);
+          currentY += lines.length * 8;
+        }
+      } else if (node.tagName === "P" || node.tagName === "DIV") {
+        for (const child of node.childNodes) {
+          processNode(child);
+        }
+        currentY += 5; // Espacio extra tras cada párrafo
+      } else {
+        for (const child of node.childNodes) {
+          processNode(child);
+        }
+      }
+    }
+  
+    for (const child of container.childNodes) {
+      processNode(child);
+    }
+  
+    // Firmas
+    if (currentY + 30 > 270) {
+      doc.addPage();
+      currentY = 30;
+    }
+  
+    doc.setFont("times", "normal");
+    doc.setFontSize(12);
+    doc.line(30, currentY + 20, 80, currentY + 20);
+    doc.text("Firma del Comprador", 30, currentY + 25);
+  
+    doc.line(130, currentY + 20, 180, currentY + 20);
+    doc.text("Firma del Vendedor", 130, currentY + 25);
+  
+    const filename = contractName
+      ? `${contractName.replace(/\s+/g, "_").toLowerCase()}.pdf`
+      : "contratocopilotthemis.pdf";
+  
+    doc.save(filename);
+  };
+  
+
   const getDisclaimerByContractName = (contractName) => {
     const name = contractName.toLowerCase();
   
@@ -185,6 +276,21 @@ const Copilot = ({ onBack }) => {
   
     // Si no detectamos ningún patrón
     return "Este contrato se redacta conforme a la legislación vigente en España. Las partes firmantes acuerdan cumplir las obligaciones que se derivan del mismo.";
+  };
+  
+  const sanitizeFileName = (name) => {
+    if (!name) return "contrato_copilot_themis";
+  
+    // 1. Quitar tildes y caracteres especiales
+    const normalized = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  
+    // 2. Reemplazar espacios por guiones bajos
+    const withoutSpaces = normalized.replace(/\s+/g, "_");
+  
+    // 3. Eliminar caracteres no permitidos en nombres de archivo
+    const safe = withoutSpaces.replace(/[^a-zA-Z0-9_-]/g, "");
+  
+    return safe.toLowerCase();
   };
   
 
@@ -211,10 +317,10 @@ const Copilot = ({ onBack }) => {
                   {verifying ? "Verificando..." : "Verificar"}
                 </button>
                 <button className="toolbar-btn" onClick={handleRunLegalCheck}>
-                  Revisión Jurídica
+                  {legalAnalysis ? "Analizando..." : "Análisis jurídico"}
                 </button>
                 <button className="toolbar-btn" onClick={handleRenderContract}>
-                  {loadingRender ? "Renderizando..." : "Vista Previa Bonita"}
+                  {loadingRender ? "Renderizando..." : "Vista Previa"}
                 </button>
               </>
             ) : (
@@ -222,8 +328,8 @@ const Copilot = ({ onBack }) => {
                 <button className="toolbar-btn" onClick={() => setIsPreviewMode(false)}>
                   Volver a Editar
                 </button>
-                <button className="toolbar-btn" onClick={handleSaveRenderedContract}>
-                  Guardar Contrato Bonito
+                <button className="toolbar-btn" onClick={handleSaveRenderedContractPro}>
+                  Guardar Contrato PDF
                 </button>
               </>
             )}
@@ -276,7 +382,9 @@ const Copilot = ({ onBack }) => {
             {legalAnalysis && (
               <>
                 <h3 className="suggestion-title">🧾 Informe Jurídico:</h3>
-                <p className="suggestion-text">{legalAnalysis}</p>
+                <div className="suggestion-text">
+                  <Markdown>{legalAnalysis}</Markdown>
+                </div>
               </>
             )}
           </aside>

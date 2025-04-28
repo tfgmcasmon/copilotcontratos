@@ -4,7 +4,7 @@ import Header from "./components/Header";
 import Home from "./pages/Home";
 import Copilot from "./pages/Copilot";
 import LegalChat from "./pages/LegalChat";
-import TaskManager from "./pages/TaskManager";
+import VisionBoard from "./pages/VisionBoard";  
 
 function App() {
     const [currentView, setCurrentView] = useState("home");
@@ -17,8 +17,8 @@ function App() {
                 return <Copilot onBack={handleBack} />;
             case "legalChat":
                 return <LegalChat onBack={handleBack} />;
-            case "taskManager":
-                return <TaskManager onBack={handleBack} />;
+            case "visionBoard":                       
+                return <VisionBoard />;
             default:
                 return <Home onNavigate={setCurrentView} />;
         }
@@ -26,7 +26,7 @@ function App() {
 
     return (
         <div className="app-container">
-            <Header />
+            <Header onNavigate={setCurrentView} />
             {renderView()}
         </div>
     );
