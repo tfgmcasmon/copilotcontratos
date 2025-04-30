@@ -1,22 +1,21 @@
-import React from "react";
-import "../styles/components/TeamColumn.css";
-import TaskCard from "./TaskCard";
+import React from 'react';
+import TaskCard from './TaskCard'; // Asegúrate de que TaskCard se está importando
 
-function TeamColumn({ member, tasks }) {
-    return (
-        <div className="team-column">
-            <h2 className="team-column-title">{member.nombre}</h2>
-            <div className="team-column-tasks">
-                {tasks.length > 0 ? (
-                    tasks.map(task => (
-                        <TaskCard key={task.id} task={task} />
-                    ))
-                ) : (
-                    <p className="team-column-empty">Sin tareas asignadas</p>
-                )}
-            </div>
-        </div>
-    );
-}
+const TeamColumn = ({ member, tasks, handleTaskStatusChange }) => {
+  return (
+    <div className="team-column">
+      <h3>{member.nombre}</h3>
+      <div>
+        {tasks.map((task) => (
+          <TaskCard
+            key={task.id}
+            task={task}
+            handleTaskStatusChange={handleTaskStatusChange}  // Pasamos la función de cambio de estado aquí
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
 
 export default TeamColumn;

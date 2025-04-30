@@ -107,6 +107,8 @@ def update_task(task_id):
 
     data = request.get_json()
 
+
+
     # --- CONTROLAR DEPENDENCIAS ---
     nuevo_estado = data.get("estado")
     if nuevo_estado in ["En curso", "Terminada"]:
@@ -152,6 +154,41 @@ def update_task(task_id):
         db.commit()
 
     return jsonify({"message": "Tarea actualizada correctamente", "task_id": task.id})
+
+
+from flask import Blueprint, request, jsonify
+from models import Task, User, db
+import random
+
+taskmanager_bp = Blueprint("taskmanager", __name__, url_prefix="/taskmanager")
+
+# Lógica de asignación dinámica de tareas
+@taskmanager_bp.route("/assign-tasks", methods=["POST"])
+def assign_tasks():
+    tasks = db.session.query(Task).filter(Task.estado == "No empezada").all()
+    users = db.session.query(User).all()
+    
+    # Crear un diccionario de carga de trabajo por usuario
+    workload = {user.id: 0 for user in users}
+
+    # Calcular la carga de trabajo actual de los usuarios
+    for task in tasks:
+        workload[task.asignado_a] += task.estimacion_horas
+
+    # Asignar tareas a los usuarios con menos carga de trabajo
+    for task in tasks:
+        if task.asignado_a is None:  # Si la tarea no tiene asignado a nadie
+            # Filtrar los usuarios con la especialización adecuada para la tarea
+            eligible_users = [user for user in users if user.especializacion == task.tipo]
+
+            # Encontrar el usuario con menos carga de trabajo
+            user_with_least_workload = min(eligible_users, key=lambda user: workload[user.id])
+
+            task.asignado_a = user_with_least_workload.id
+            workload[user_with_least_workload.id] += task.estimacion_horas
+
+    db.session.commit()
+    return jsonify({"message": "Tareas asignadas correctamente."}), 200
 
 # ---------------------------
 #        CLIENTES

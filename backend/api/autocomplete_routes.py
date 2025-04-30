@@ -18,7 +18,7 @@ def track_changes():
     if not original_text:
         return jsonify({"error": "No se recibió texto válido para cambios"}), 400
 
-    # 🔥 Anonimizar el texto antes de enviarlo a la IA
+    #  Anonimizar el texto antes de enviarlo a la IA
     anonymized_text, replacements = anonymize_text(original_text)
 
     # Detectar la sección basada en texto original (mejor para detección humana)
@@ -119,7 +119,7 @@ def track_changes():
         "Continúa el contrato aquí:"
     )
 
-    # 🔥 Llamada a la IA
+    #  Llamada a la IA
     response = client.chat.completions.create(
         model="mistralai/mistral-7b-instruct",
         messages=[{"role": "user", "content": prompt}],
@@ -130,7 +130,7 @@ def track_changes():
     anonymized_completion = response.choices[0].message.content.strip()
 
 
-    # 🔥 Revertir reemplazos para el usuario
+    #  Revertir reemplazos para el usuario
     final_completion = revert_replacements(anonymized_completion, replacements)
 
     return jsonify({"autocomplete": final_completion}), 200

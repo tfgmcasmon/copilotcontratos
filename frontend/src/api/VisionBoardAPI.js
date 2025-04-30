@@ -60,3 +60,25 @@ export const fetchUsers = async () => {
     }
   };
   
+  // Función para actualizar el estado de una tarea
+export const updateTaskStatus = async (taskId, newStatus) => {
+  try {
+    const response = await fetch(`http://127.0.0.1:8080/taskmanager/tasks/${taskId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ estado: newStatus }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data; // Devuelve los datos actualizados de la tarea
+    } else {
+      throw new Error('Error al actualizar la tarea');
+    }
+  } catch (error) {
+    console.error('Error en la conexión con el backend:', error);
+    throw error;
+  }
+};

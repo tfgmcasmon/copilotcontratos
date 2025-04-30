@@ -10,8 +10,8 @@ from api.legalchat_routes import legalchat_bp
 from api.contract_context_routes import contract_context_bp
 from api.legal_verifier_routes import legalcheck_bp
 from api.render_routes import render_bp
-from api.taskmanager_routes import taskmanager_bp
-from api.user_routes import user_bp
+#from api.taskmanager_routes import taskmanager_bp
+# from api.user_routes import user_bp
 from scheduler import start_scheduler
 
 
@@ -28,8 +28,8 @@ def create_app():
     app.register_blueprint(contract_context_bp)
     app.register_blueprint(legalcheck_bp)
     app.register_blueprint(render_bp)
-    app.register_blueprint(taskmanager_bp)
-    app.register_blueprint(user_bp)
+    #app.register_blueprint(taskmanager_bp)
+    #app.register_blueprint(user_bp)
 
     start_scheduler()
 

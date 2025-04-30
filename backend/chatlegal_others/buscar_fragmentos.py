@@ -96,7 +96,7 @@ def limitar_longitud(fragmentos, max_tokens=1500):
 
     return seleccionados
 
-def get_fragmentos_legales(pregunta, k=5, max_tokens=1200, padding=100):
+def get_fragmentos_legales(pregunta, k=3, max_tokens=1200, padding=100):
     modelo = cargar_modelo()
     index = cargar_index()
     metadatos = cargar_metadatos()

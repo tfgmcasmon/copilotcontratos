@@ -77,3 +77,23 @@
     gap: 20px;
   }
   
+  /* VisionBoard.css */
+.task-card select {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-top: 10px;
+  font-size: 14px;
+  background-color: #fff;
+  cursor: pointer;
+}
+
+.task-card select:focus {
+  outline: none;
+  border-color: #730b2d;
+}
+
+.task-card select option {
+  padding: 8px;
+  background-color: #fff;
+}

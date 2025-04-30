@@ -21,16 +21,16 @@ def verify_contract_data(contract_text):
     issues = []
     warnings = []
 
-    # 🔥 Paso 1: Limpiar texto
+    #  Paso 1: Limpiar texto
     clean_text = limpiar_texto(contract_text)
 
-    # 🔥 Paso 2: Escanear todo el texto
+    #  Paso 2: Escanear todo el texto
     posibles_dnis = re.findall(r'\b\d{7,8}[A-Za-z]\b', clean_text)
     posibles_telefonos = re.findall(r'\b6\d{8}\b|\b7\d{8}\b', clean_text)
     posibles_referencias = re.findall(r'\b\d{14}\b', clean_text)
     posibles_direcciones = re.findall(r'\b(calle|avenida|plaza|camino|paseo)\b', clean_text, re.IGNORECASE)
 
-    # 🔥 Paso 3: Validar DNIs
+    #  Paso 3: Validar DNIs
     if not posibles_dnis:
         issues.append("❌ No se detectaron DNIs válidos en el contrato.")
     else:
@@ -56,7 +56,7 @@ def verify_contract_data(contract_text):
             if count > 1:
                 issues.append(f"❌ El DNI '{dni}' aparece duplicado en el contrato (potencial conflicto de identidad).")
 
-    # 🔥 Paso 4: Validar teléfonos
+    #  Paso 4: Validar teléfonos
     if not posibles_telefonos:
         warnings.append("⚠️ No se detectaron teléfonos en el contrato.")
     else:
@@ -67,7 +67,7 @@ def verify_contract_data(contract_text):
             if count > 1:
                 warnings.append(f"⚠️ El teléfono '{tel}' está asociado a múltiples personas o se repite.")
 
-    # 🔥 Paso 5: Validar referencias catastrales
+    #  Paso 5: Validar referencias catastrales
     if not posibles_referencias:
         warnings.append("⚠️ No se detectó ninguna referencia catastral en el contrato (puede ser necesaria).")
     else:
@@ -78,11 +78,11 @@ def verify_contract_data(contract_text):
             if count > 1:
                 issues.append(f"❌ La referencia catastral '{ref}' aparece asignada a múltiples propiedades distintas.")
 
-    # 🔥 Paso 6: Validar direcciones
+    #  Paso 6: Validar direcciones
     if not posibles_direcciones:
         warnings.append("⚠️ No se detectaron direcciones asociadas a personas o inmuebles en el contrato.")
 
-    # 🔥 Resultado final
+    #  Resultado final
     if not issues and not warnings:
         return ["✅ No se detectaron problemas en los datos del contrato."]
     else:

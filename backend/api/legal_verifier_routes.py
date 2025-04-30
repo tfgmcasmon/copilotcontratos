@@ -13,7 +13,7 @@ def run_legal_check():
         original_content = data.get("content", "")
         contract_type = data.get("contract_type", "general")
 
-        # 🔥 Anonimizar
+        #  Anonimizar
         anonymized_content, replacements = anonymize_text(original_content)
 
         # Construir el prompt
@@ -41,7 +41,7 @@ def run_legal_check():
 
         anonymized_analysis = response.choices[0].message.content.strip()
 
-        # 🔥 Revertir el análisis para mostrar nombres reales si los menciona
+        #  Revertir el análisis para mostrar nombres reales si los menciona
         final_analysis = revert_replacements(anonymized_analysis, replacements)
 
         return jsonify({
